@@ -26,4 +26,8 @@ describe("Agent localization", () => {
     expect(localizeUnderstanding("en", "分析客户材料并规划工作")).toBe("Analyze client materials and plan the work");
     expect(localizeSystemText("en", "总预算上限为 $180,000，包含达人费用与版权成本。")).toBe("The total budget cap is $180,000, including creator fees and rights costs.");
   });
+
+  it("localizes system copy persisted by the pre-language demo", () => {
+    expect(localizeSystemText("en", "把客户材料交给我。我会先分析邮件、预算表和会议纪要，再在高影响冲突处暂停。")).toContain("Give me the client materials");
+  });
 });

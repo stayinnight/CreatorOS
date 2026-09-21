@@ -44,6 +44,7 @@ export function localizeUnderstanding(locale: Locale, text: string) { return loc
 
 export function localizeSystemText(locale: Locale, text: string) {
   if (locale === "en") {
+    if (text === "把客户材料交给我。我会先分析邮件、预算表和会议纪要，再在高影响冲突处暂停。") return "Give me the client materials. I’ll analyze the email, budget sheet, and meeting notes, then pause at high-impact conflicts.";
     const budget = text.match(/^总预算上限为 \$([\d,]+)，包含达人费用与版权成本。$/);
     if (budget) return `The total budget cap is $${budget[1]}, including creator fees and rights costs.`;
     const markets = text.match(/^(.+)，覆盖 (.+) 骑行场景。$/);
