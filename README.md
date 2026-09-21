@@ -4,6 +4,19 @@
 
 产品形态不是多个功能模块的拼接，而是一个完整的 Agent 工作台：用户从待办 Inbox 进入 Campaign，向 Agent 提交客户材料；Agent 先给出计划，再执行低风险工作，并在需求冲突、Matrix 锁定、校准方向和客户发布等高影响节点暂停等待人工判断。Brief、Creator Mix、Search Package、候选人批次和客户反馈都作为带来源关系的 Artifact 在同一工作流中打开。
 
+## 作业开始前说明
+
+1. **最接近的本人经验**：我此前主导生活服务策略生成 Agent 的前后端主链路建设，将飞书文档、Excel 和自然语言中的非结构化策略需求，经 Agent 编排、Skill/Tool、确定性校验、Artifact 与人工确认，转成可执行、可追踪的策略配置。它与本题最相近的经验，是把模糊的多源业务需求收敛成受规则约束、可确认、可回退的完整业务闭环。
+2. **此前没有直接做过的部分**：上述项目没有直接处理海外 Creator 的实时搜索、报价、Rights 和客户名单交付。因此本题不把固定数据冒充真实外部能力，而是明确业务假设和 Mock 边界，把可验证的规则、状态和字段隔离做实。
+3. **最先完成的最小闭环**：先跑通“三份材料 → 冲突确认 → Brief v1 → 两套 Matrix → Search Packages → 候选证据与 30 + 10 名单 → 客户反馈 → Backup / 局部补池”，其中优先做深 Matrix 公式、硬约束、版本锁定和下游任务生成。
+
+## 交付导航
+
+- [`DESIGN.md`](DESIGN.md)：面向评审的完整产品与系统设计，包括业务闭环、领域对象、Agent 边界、Matrix、证据资格、客户投影与补池。
+- [`decision.md`](decision.md)：AI 使用、采纳与拒绝的方案、Bad Case、隐私边界和工程取舍。
+- [`docs/最终验收记录.md`](docs/最终验收记录.md)：题面要求到代码/页面/测试的映射，以及最终自动化和人工验收记录。
+- [`fixtures/search-package.example.json`](fixtures/search-package.example.json)：独立的 Search & Kickoff Package Schema 示例。
+
 ## 本地运行与验证
 
 环境要求：Node 18.18+、npm。
@@ -51,6 +64,22 @@ npm run build
 本 Demo 的 Agent 是**确定性的，不调用在线 AI 模型**。自然语言输入只支持界面中给出的有限意图，例如“先只整理 Brief”“为什么推荐他”“找相似但更生活化的人”；超出范围的输入会明确说明边界并给出可用建议，不会伪装成通用模型。
 
 用户在 Decision Card、Matrix、校准和发布环节的操作会真实改变计算结果、状态迁移和下游 Artifact。飞书、Gmail、公开搜索、实时报价和真实外发均不在本地 Demo 中执行。
+
+## 真实实现、Mock 与未实现项
+
+| 范围 | 当前交付 |
+|---|---|
+| Brief 冲突、人工决策与发布 | 确定性状态迁移，可交互 |
+| 两套 Matrix、公式、硬约束、失败/恢复与锁定 | 确定性领域逻辑，可交互并有测试 |
+| Matrix → Search Packages | 真实派生逻辑，有 Fixture 与测试 |
+| 证据硬门禁、Fit Score、校准与 30 + 10 扩展 | 确定性领域逻辑，可交互并有测试 |
+| Client Projection、Feedback、Gap、Backup、Replenishment | 真实字段白名单和状态逻辑，有测试 |
+| 原始材料的通用解析、在线模型、实时 Creator 搜索/视频识别 | Mock；只使用固定、可复现的结构化数据 |
+| 飞书、Gmail、WhatsApp、真实报价与客户外发 | Mock；不产生外部副作用 |
+| Replan Matrix、Revise Brief | 完整设计和分支建议，当前未实现通用编辑器 |
+| 后端、账号权限、多人协作、数据库、生产监控 | 未实现，不属于本次最小系统验证范围 |
+
+当前应用使用 `localStorage` 保存单用户 Demo 状态，不代表生产级数据持久化。自动化覆盖领域规则和 React 交互单元，但没有 Playwright 浏览器 E2E；提交前仍需按中文验收顺序人工点击一次。
 
 ## 交互与视觉说明
 
