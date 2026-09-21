@@ -6,6 +6,7 @@ import { generateSearchPackages } from "../domain/search";
 import { qualifyCandidate } from "../domain/candidate";
 import { assessGap } from "../domain/gap";
 import type { CandidateDecision } from "../domain/model";
+import { planMaterialRun, registerArtifact, resolveWorkflowDecision, selectArtifact, startMaterialRun } from "../agent/workflow";
 
 export type CampaignAction =
   | { type: "RESET" }
@@ -22,7 +23,12 @@ export type CampaignAction =
   | { type: "SET_CLIENT_DECISION"; candidateId: string; decision: CandidateDecision; reason?: string; comment?: string }
   | { type: "SUBMIT_DECISIONS"; decisions: Record<string, CandidateDecision> }
   | { type: "PROMOTE_BACKUP"; candidateId: string }
-  | { type: "CREATE_REPLENISHMENT"; packageId: string };
+  | { type: "CREATE_REPLENISHMENT"; packageId: string }
+  | { type: "LOAD_DEMO_MATERIALS" }
+  | { type: "START_AGENT_RUN" }
+  | { type: "RESOLVE_AGENT_DECISION"; decisionId: string; value: string }
+  | { type: "OPEN_ARTIFACT"; artifactId: string }
+  | { type: "CLOSE_ARTIFACT" };
 
 function activity(message: string) {
   return { id: `activity-${message.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}`, at: "2026-09-21T10:00:00+08:00", kind: "Planning", message, status: "Success" as const };
@@ -31,6 +37,21 @@ function activity(message: string) {
 export function campaignReducer(state: CampaignState, action: CampaignAction): CampaignState {
   switch (action.type) {
     case "RESET": return structuredClone(campaignSeed);
+    case "LOAD_DEMO_MATERIALS": return { ...state, agent: planMaterialRun(state.agent) };
+    case "START_AGENT_RUN": return { ...state, agent: startMaterialRun(state.agent) };
+    case "OPEN_ARTIFACT": return { ...state, agent: selectArtifact(state.agent, action.artifactId) };
+    case "CLOSE_ARTIFACT": return { ...state, agent: selectArtifact(state.agent, null) };
+    case "RESOLVE_AGENT_DECISION": {
+      const decision = state.agent.decisions.find((item) => item.id === action.decisionId);
+      if (!decision) return state;
+      const brief = resolveConflict(state.brief, decision.conflictId, action.value);
+      let agent = resolveWorkflowDecision(state.agent, action.decisionId, action.value);
+      if (agent.decisions.some((item) => item.status === "Pending")) return { ...state, brief, agent };
+      const published = publishBrief(brief);
+      agent = registerArtifact(agent, { id: "artifact-brief-v1", campaignId: state.id, kind: "Brief", version: 1, status: "Published", sourceRunId: "run-brief-to-shortlist", sourceStepId: "step-conflicts", parentArtifactIds: [], summary: "Brief v1 published · 2 conflicts resolved · US / UK cycling camera launch", domainRef: "brief-v1", createdAt: "2026-09-21T09:12:00+08:00" });
+      agent = { ...agent, messages: [...agent.messages, { id: "message-next-mix", runId: "run-brief-to-shortlist", role: "Agent", type: "NextAction", text: "Brief v1 is ready. Next I can build and compare two creator mix options.", payloadRef: "generate-mix", createdAt: "2026-09-21T09:12:30+08:00" }] };
+      return { ...state, brief: published, agent, activity: [...state.activity, activity("Brief v1 published")] };
+    }
     case "RESOLVE_CONFLICT": return { ...state, brief: resolveConflict(state.brief, action.conflictId, action.resolution) };
     case "PUBLISH_BRIEF": return { ...state, brief: publishBrief(state.brief), activity: [...state.activity, activity("Brief v1 published")] };
     case "SELECT_SCENARIO": return { ...state, activeScenarioId: action.scenarioId };
