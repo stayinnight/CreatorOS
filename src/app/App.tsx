@@ -10,7 +10,7 @@ const navigation = [{ label: "Inbox", path: "/" }, { label: "Campaigns", path: "
 
 function Workspace() {
   const { dispatch } = useCampaign();
-  return <div className="agent-shell">
+  return <div className="agent-shell monochrome-editorial">
     <aside className="global-rail">
       <div className="wordmark"><span className="mark">GS</span><div><strong>Campaign OS</strong><small>Agent workspace</small></div></div>
       <nav aria-label="Work navigation">{navigation.map((item, index) => <NavLink key={item.path} to={item.path} end={item.path === "/"}><span>{String(index + 1).padStart(2, "0")}</span>{item.label}</NavLink>)}</nav>
