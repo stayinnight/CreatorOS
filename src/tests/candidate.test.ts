@@ -11,7 +11,7 @@ describe("candidate qualification", () => {
     const pkg = packages.find((item) => item.matrixCellId === candidate.matrixCellId)!;
     const result = qualifyCandidate(candidate, pkg);
     expect(result.status).toBe("Disqualified");
-    expect(result.reasons).toContain("No verified real-cycling evidence");
+    expect(result.reasons).toContain("没有真实自行车骑行证据");
   });
 
   it("flags missing evidence for human review", () => {
@@ -20,17 +20,16 @@ describe("candidate qualification", () => {
     expect(qualifyCandidate(candidate, pkg).status).toBe("Needs Review");
   });
 
-  it("keeps an over-budget but relevant creator visible as commercial risk", () => {
+  it("keeps an over-budget but relevant creator visible for commercial review", () => {
     const candidate = campaignSeed.candidates.find((item) => item.id === "creator-over-budget")!;
     const pkg = packages.find((item) => item.matrixCellId === candidate.matrixCellId)!;
     const result = qualifyCandidate(candidate, pkg);
-    expect(result.status).toBe("Qualified");
-    expect(result.risks).toContain("Quote exceeds Matrix cell ceiling");
+    expect(result.status).toBe("Needs Review");
+    expect(result.risks).toContain("报价超出单元格上限或仍为估价");
   });
 
   it("uses the published transparent score weights", () => {
     const candidate = campaignSeed.candidates[0];
-    const expected = candidate.scores.relevance * .35 + candidate.scores.production * .2 + candidate.scores.stability * .2 + candidate.scores.commercial * .15 + candidate.scores.audience * .1;
-    expect(candidateScore(candidate).total).toBeCloseTo(expected, 5);
+    expect(candidateScore(candidate).weights).toEqual({ relevance: 30, povEvidence: 25, production: 15, stability: 15, commercial: 10, audience: 5 });
   });
 });

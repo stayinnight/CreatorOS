@@ -251,4 +251,33 @@ export interface Qualification {
   reasons: string[];
   risks: string[];
 }
+
+export type GateStatus = "Pass" | "Review" | "Fail";
+export type EvidenceConfidence = "High" | "Medium" | "Low";
+export type QualificationGateId = "market" | "platform-format" | "real-cycling" | "scenario" | "head-camera-proof" | "commercial";
+
+export interface GateResult {
+  id: QualificationGateId;
+  label: string;
+  status: GateStatus;
+  ruleId: string;
+  evidenceIds: string[];
+  summary: string;
+}
+
+export interface FitScore {
+  total: number;
+  weights: { relevance: 30; povEvidence: 25; production: 15; stability: 15; commercial: 10; audience: 5 };
+  breakdown: Record<"relevance" | "povEvidence" | "production" | "stability" | "commercial" | "audience", number>;
+}
+
+export interface QualificationResult {
+  candidateId: string;
+  status: QualificationStatus;
+  confidence: EvidenceConfidence;
+  gates: GateResult[];
+  evidenceIds: string[];
+  risks: string[];
+  score: FitScore | null;
+}
 import type { AgentWorkspaceState } from "../agent/model";
