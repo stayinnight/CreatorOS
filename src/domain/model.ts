@@ -243,6 +243,7 @@ export interface CampaignState {
   reviewRound: ReviewRound | null;
   gapAssessment: GapAssessment | null;
   activity: ActivityItem[];
+  agent: AgentWorkspaceState;
 }
 
 export interface Qualification {
@@ -250,3 +251,4 @@ export interface Qualification {
   reasons: string[];
   risks: string[];
 }
+import type { AgentWorkspaceState } from "../agent/model";

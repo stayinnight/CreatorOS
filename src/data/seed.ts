@@ -1,4 +1,5 @@
 import type { CampaignCandidate, CampaignState, MatrixRow } from "../domain/model";
+import { createAgentSeed } from "../agent/seed";
 
 const scenarioARows: MatrixRow[] = [
   { id: "us-road-youtube", market: "US", platform: "YouTube", ridingScenario: "Road", creatorTier: "Mid", contentFormat: "Long Review", plannedCreators: 2, postsPerCreator: 1, medianRelevantViews: 500_000, creatorFee: 28_000, rightsCost: 4_000, otherCost: 0, searchMultiplier: 3, note: "Hero reviews with POV and safety proof." },
@@ -136,4 +137,5 @@ export const campaignSeed: CampaignState = {
   reviewRound: null,
   gapAssessment: null,
   activity: [{ id: "activity-created", at: "2026-09-21T08:30:00+08:00", kind: "Campaign", message: "Cycling camera planning workspace created", status: "Info" }],
+  agent: createAgentSeed(),
 };

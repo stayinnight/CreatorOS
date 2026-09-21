@@ -8,6 +8,22 @@ const ridingScenario = enumValues(["Road", "MTB", "Urban"]);
 const evidenceScenario = enumValues(["Road", "MTB", "Urban", "Motorcycle", "Skiing"]);
 const contentFormat = enumValues(["Long Review", "Short Video", "Reel"]);
 
+const runStepSchema = z.object({
+  id: z.string(), runId: z.string(), kind: enumValues(["ReadSources", "NormalizeBrief", "DetectConflicts", "BuildMix", "SourceCandidates", "Calibrate", "PublishReview", "AssessGap", "RecoverGap"]),
+  label: z.string(), status: enumValues(["Pending", "Running", "Waiting", "Succeeded", "Failed", "Skipped"]), inputRefs: z.array(z.string()), outputRefs: z.array(z.string()),
+  summary: z.string(), error: z.string().nullable(), startedAt: z.string().nullable(), completedAt: z.string().nullable(),
+});
+
+const agentSchema = z.object({
+  activeRunId: z.string().nullable(), selectedArtifactId: z.string().nullable(), availableSources: z.array(z.string()),
+  runs: z.array(z.object({ id: z.string(), campaignId: z.string(), goal: z.string(), status: enumValues(["Planned", "Running", "WaitingForDecision", "WaitingForApproval", "Failed", "Completed"]), currentStepId: z.string().nullable(), stepIds: z.array(z.string()), inputArtifactIds: z.array(z.string()), outputArtifactIds: z.array(z.string()), startedAt: z.string().nullable(), completedAt: z.string().nullable() })),
+  steps: z.array(runStepSchema),
+  messages: z.array(z.object({ id: z.string(), runId: z.string().nullable(), role: enumValues(["User", "Agent", "System"]), type: enumValues(["Text", "Plan", "RunGroup", "Decision", "Artifact", "Exception", "NextAction"]), text: z.string(), payloadRef: z.string().nullable(), createdAt: z.string() })),
+  decisions: z.array(z.object({ id: z.string(), runId: z.string(), stepId: z.string(), conflictId: z.string(), question: z.string(), options: z.array(z.object({ id: z.string(), label: z.string(), value: z.string(), impact: z.string() })), evidenceSourceIds: z.array(z.string()), recommendation: z.string(), rationale: z.string(), status: enumValues(["Pending", "Resolved"]), resolution: z.string().nullable(), resolvedAt: z.string().nullable() })),
+  artifacts: z.array(z.object({ id: z.string(), campaignId: z.string(), kind: enumValues(["Brief", "Mix", "SearchPackageSet", "CandidateBatch", "ReviewRound", "GapAssessment"]), version: z.number(), status: enumValues(["Draft", "Ready", "Locked", "Published", "Stale"]), sourceRunId: z.string(), sourceStepId: z.string(), parentArtifactIds: z.array(z.string()), summary: z.string(), domainRef: z.string(), createdAt: z.string() })),
+  calibrationCandidateIds: z.array(z.string()), calibrationFeedback: z.record(z.string(), z.string()), campaignPreferences: z.array(z.string()),
+});
+
 const matrixRowSchema = z.object({
   id: z.string(), market, platform, ridingScenario, creatorTier: enumValues(["Macro", "Mid", "Micro"]), contentFormat,
   plannedCreators: z.number().int().nonnegative(), postsPerCreator: z.number().int().positive(), medianRelevantViews: z.number().nonnegative(),
@@ -48,6 +64,7 @@ const campaignStateSchema = z.object({
   activeScenarioId: z.string(), searchPackages: z.array(z.unknown()), batches: z.array(z.object({ id: z.string(), packageIds: z.array(z.string()), sourceType: enumValues(["Internal", "Public", "Manual"]), createdAt: z.string(), resultCount: z.number(), note: z.string() })),
   candidates: z.array(candidateSchema), candidatesLoaded: z.boolean(), reviewRound: z.unknown().nullable(), gapAssessment: z.unknown().nullable(),
   activity: z.array(z.object({ id: z.string(), at: z.string(), kind: z.string(), message: z.string(), status: enumValues(["Success", "Failed", "Info"]) })),
+  agent: agentSchema,
 });
 
 export function parseCampaignSeed(input: unknown): CampaignState {
