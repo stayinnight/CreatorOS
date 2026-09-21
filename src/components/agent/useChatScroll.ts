@@ -1,51 +1,38 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, type UIEvent } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type UIEvent } from "react";
 
 const BOTTOM_THRESHOLD = 72;
+const reducedMotion = () => window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
-function reducedMotion() {
-  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
-}
-
-export function useChatScroll(messageCount: number) {
+export function useChatScroll({ messageCount, contentRevision = 0 }: { messageCount: number; contentRevision?: number }) {
   const viewportRef = useRef<HTMLElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const pinnedToBottomRef = useRef(true);
   const frameRef = useRef<number | null>(null);
-
+  const [showJumpToLatest, setShowJumpToLatest] = useState(false);
   const scrollToEnd = useCallback((behavior: ScrollBehavior) => {
     if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
     frameRef.current = requestAnimationFrame(() => {
       const viewport = viewportRef.current;
-      if (!viewport) return;
-      viewport.scrollTo({ top: viewport.scrollHeight, behavior });
+      if (viewport) viewport.scrollTo({ top: viewport.scrollHeight, behavior });
       frameRef.current = null;
     });
   }, []);
-
   useLayoutEffect(() => {
-    pinnedToBottomRef.current = true;
-    scrollToEnd(reducedMotion() ? "auto" : "smooth");
-  }, [messageCount, scrollToEnd]);
-
+    if (pinnedToBottomRef.current) scrollToEnd(reducedMotion() ? "auto" : "smooth");
+    else setShowJumpToLatest(true);
+  }, [messageCount, contentRevision, scrollToEnd]);
   useEffect(() => {
     const content = contentRef.current;
     if (!content || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(() => {
-      const viewport = viewportRef.current;
-      if (viewport && pinnedToBottomRef.current) viewport.scrollTop = viewport.scrollHeight;
-    });
-    observer.observe(content);
-    return () => observer.disconnect();
+    const observer = new ResizeObserver(() => { if (pinnedToBottomRef.current) { const viewport = viewportRef.current; if (viewport) viewport.scrollTop = viewport.scrollHeight; } });
+    observer.observe(content); return () => observer.disconnect();
   }, []);
-
-  useEffect(() => () => {
-    if (frameRef.current !== null) cancelAnimationFrame(frameRef.current);
-  }, []);
-
+  useEffect(() => () => { if (frameRef.current !== null) cancelAnimationFrame(frameRef.current); }, []);
   const onScroll = useCallback((event: UIEvent<HTMLElement>) => {
     const viewport = event.currentTarget;
-    pinnedToBottomRef.current = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight <= BOTTOM_THRESHOLD;
+    const pinned = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight <= BOTTOM_THRESHOLD;
+    pinnedToBottomRef.current = pinned; setShowJumpToLatest(!pinned);
   }, []);
-
-  return { viewportRef, contentRef, onScroll };
+  const jumpToLatest = useCallback(() => { pinnedToBottomRef.current = true; setShowJumpToLatest(false); scrollToEnd(reducedMotion() ? "auto" : "smooth"); }, [scrollToEnd]);
+  return { viewportRef, contentRef, onScroll, showJumpToLatest, jumpToLatest };
 }
