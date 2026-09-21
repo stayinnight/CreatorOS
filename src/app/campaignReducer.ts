@@ -16,6 +16,7 @@ import { getRecommendedNextAction } from "../agent/recommendedAction";
 import { applyPreference, buildApprovedSlate, getCalibrationReadiness, previewRejectImpact } from "../agent/calibrationReview";
 import { qualifyCandidateDetailed } from "../domain/qualification";
 import type { CalibrationDecision, PreferenceImpact, RejectReason } from "../agent/model";
+import { buildAgentTurnPlan } from "../agent/agentTurn";
 
 export type CampaignAction =
   | { type: "RESET" }
@@ -38,7 +39,9 @@ export type CampaignAction =
   | { type: "RESOLVE_AGENT_DECISION"; decisionId: string; value: string }
   | { type: "OPEN_ARTIFACT"; artifactId: string }
   | { type: "CLOSE_ARTIFACT" }
-  | { type: "SEND_AGENT_MESSAGE"; text: string; context?: { candidateId?: string } }
+  | { type: "SEND_AGENT_MESSAGE"; text: string; context?: { candidateId?: string }; skipUser?: boolean }
+  | { type: "BEGIN_AGENT_TURN"; turnId: string; text: string; context?: { candidateId?: string } }
+  | { type: "COMPLETE_AGENT_TURN"; turnId: string; text: string; context?: { candidateId?: string } }
   | { type: "FAIL_AGENT_STEP"; stepId: string; error: string }
   | { type: "RETRY_AGENT_STEP"; stepId: string }
   | { type: "GENERATE_MIX_OPTIONS" }
@@ -63,6 +66,17 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
     case "START_AGENT_RUN": return { ...state, agent: startMaterialRun(state.agent) };
     case "OPEN_ARTIFACT": return { ...state, agent: selectArtifact(state.agent, action.artifactId) };
     case "CLOSE_ARTIFACT": return { ...state, agent: selectArtifact(state.agent, null) };
+    case "BEGIN_AGENT_TURN": {
+      if (state.agent.messages.some((message) => message.payloadRef === `turn-user:${action.turnId}`)) return state;
+      return { ...state, agent: { ...state.agent, messages: [...state.agent.messages, { id: `message-user-${action.turnId}`, runId: state.agent.activeRunId, role: "User", type: "Text", text: action.text, payloadRef: `turn-user:${action.turnId}`, createdAt: new Date().toISOString() }] } };
+    }
+    case "COMPLETE_AGENT_TURN": {
+      if (state.agent.turns.some((turn) => turn.id === action.turnId)) return state;
+      const plan = buildAgentTurnPlan(state, action.text, action.context);
+      const answered = campaignReducer(state, { type: "SEND_AGENT_MESSAGE", text: action.text, context: action.context, skipUser: true });
+      const answerMessage = answered.agent.messages.at(-1);
+      return { ...answered, agent: { ...answered.agent, turns: [...answered.agent.turns, { id: action.turnId, query: action.text, status: "Completed", understanding: plan.understanding, steps: plan.steps, ruleIds: plan.ruleIds, evidenceIds: plan.evidenceIds, answerMessageId: answerMessage?.role === "Agent" ? answerMessage.id : null, error: null }] } };
+    }
     case "GENERATE_MIX_OPTIONS": return { ...state, agent: {
       ...state.agent,
       artifacts: [...state.agent.artifacts.filter((artifact) => artifact.id !== "artifact-mix-draft"), { id: "artifact-mix-draft", campaignId: state.id, kind: "Mix", version: 0, status: "Draft", sourceRunId: "run-brief-to-shortlist", sourceStepId: "step-mix", parentArtifactIds: ["artifact-brief-v1"], domainRef: state.activeScenarioId, summary: "Two creator mix options ready to compare", createdAt: "2026-09-21T09:20:00+08:00" }],
@@ -75,16 +89,17 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
       const intent = resolution.intent;
       const suffix = state.agent.messages.length + 1;
       const userMessage = { id: `message-user-${suffix}`, runId: state.agent.activeRunId, role: "User" as const, type: "Text" as const, text: action.text, payloadRef: null, createdAt: "2026-09-21T09:15:00+08:00" };
+      const messagesWithUser = action.skipUser ? state.agent.messages : [...state.agent.messages, userMessage];
       const next = getRecommendedNextAction(state);
       const nextPayloadRef = next ? `recommended:${next.id}` : null;
       if (intent.type === "ScopeRun") {
-        const withUser = { ...state.agent, messages: [...state.agent.messages, userMessage] };
+        const withUser = { ...state.agent, messages: messagesWithUser };
         return { ...state, agent: reviseRunToBriefOnly(withUser) };
       }
-      if (intent.type === "ContinuePlan") return { ...state, agent: continueFromBrief({ ...state.agent, messages: [...state.agent.messages, { ...userMessage, createdAt: "2026-09-21T09:20:00+08:00" }] }) };
+      if (intent.type === "ContinuePlan") return { ...state, agent: continueFromBrief({ ...state.agent, messages: action.skipUser ? state.agent.messages : [...state.agent.messages, { ...userMessage, createdAt: "2026-09-21T09:20:00+08:00" }] }) };
       if (intent.type === "NextStep" && next) {
         const alreadyShown = state.agent.messages.some((message) => message.type === "NextAction" && message.payloadRef === nextPayloadRef);
-        const messages = [...state.agent.messages, userMessage];
+        const messages = [...messagesWithUser];
         if (!alreadyShown) messages.push({ id: `message-agent-${suffix}`, runId: state.agent.activeRunId, role: "Agent", type: "NextAction", text: `${next.reason} ${next.outcome}`, payloadRef: nextPayloadRef, createdAt: "2026-09-21T09:15:01+08:00" });
         return { ...state, agent: { ...state.agent, messages } };
       }
@@ -92,7 +107,7 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
         const run = state.agent.runs.find((item) => item.id === state.agent.activeRunId);
         const runSteps = state.agent.steps.filter((item) => item.runId === run?.id && run?.stepIds.includes(item.id));
         const completed = runSteps.filter((item) => item.status === "Succeeded" || item.status === "Skipped").length;
-        return { ...state, agent: { ...state.agent, messages: [...state.agent.messages, userMessage, {
+        return { ...state, agent: { ...state.agent, messages: [...messagesWithUser, {
           id: `message-agent-${suffix}`,
           runId: state.agent.activeRunId,
           role: "Agent",
@@ -116,8 +131,7 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
               ? answerCampaignFact(state, intent.query)?.body ?? "当前没有对应的 Campaign 数据。"
               : `我无法在当前阶段执行这条指令。你可以尝试：${resolution.suggestions.join(" / ")}。`;
       return { ...state, agent: { ...state.agent, messages: [
-        ...state.agent.messages,
-        userMessage,
+        ...messagesWithUser,
         { id: `message-agent-${suffix}`, runId: state.agent.activeRunId, role: "Agent", type: "Text", text: acknowledgement, payloadRef: null, createdAt: "2026-09-21T09:15:01+08:00" },
       ] } };
     }

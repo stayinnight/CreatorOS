@@ -18,6 +18,7 @@ export function createAgentSeed(): AgentWorkspaceState {
     calibrationSelectedCandidateId: null,
     approvedPrimaryIds: [],
     approvedBackupIds: [],
+    turns: [],
     messages: [{
       id: "message-welcome",
       runId: null,

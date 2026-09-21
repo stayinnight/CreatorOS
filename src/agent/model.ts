@@ -102,6 +102,10 @@ export interface PreferenceImpact extends CampaignPreference {
   reason: RejectReason;
 }
 
+export type AgentToolKind = "ReadMatrixCell" | "EvaluateQualification" | "InspectEvidence" | "SummarizeFit" | "ReadQuote" | "CompareBudgetCeiling" | "ApplyCampaignPreferences" | "ReadWorkflowState";
+export interface AgentToolStepRecord { id: string; kind: AgentToolKind; label: string; inputRefs: string[]; summary: string; }
+export interface AgentTurnRecord { id: string; query: string; status: "Completed" | "Failed"; understanding: string; steps: AgentToolStepRecord[]; ruleIds: string[]; evidenceIds: string[]; answerMessageId: string | null; error: string | null; }
+
 export interface AgentWorkspaceState {
   activeRunId: string | null;
   selectedArtifactId: string | null;
@@ -120,4 +124,5 @@ export interface AgentWorkspaceState {
   calibrationSelectedCandidateId: string | null;
   approvedPrimaryIds: string[];
   approvedBackupIds: string[];
+  turns: AgentTurnRecord[];
 }
