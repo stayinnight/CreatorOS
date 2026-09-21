@@ -36,11 +36,11 @@ describe("Agent workflow guidance", () => {
     }));
   });
 
-  it("does not append duplicate next-action answers", () => {
+  it("appends the current next action again so the user never has to scroll up", () => {
     let state = reachPackages();
     state = campaignReducer(state, { type: "SEND_AGENT_MESSAGE", text: "下一步" });
     state = campaignReducer(state, { type: "SEND_AGENT_MESSAGE", text: "下一步做什么" });
-    expect(state.agent.messages.filter((message) => message.payloadRef === "recommended:start-calibration")).toHaveLength(1);
+    expect(state.agent.messages.filter((message) => message.payloadRef === "recommended:start-calibration")).toHaveLength(2);
   });
 
   it("renders progress with the next executable action", () => {

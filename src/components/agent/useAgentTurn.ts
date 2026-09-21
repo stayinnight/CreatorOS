@@ -12,6 +12,9 @@ export function useAgentTurn(state: CampaignState, dispatch: Dispatch<CampaignAc
   const timers = useRef<number[]>([]);
   const clearTimers = useCallback(() => { timers.current.forEach(window.clearTimeout); timers.current = []; }, []);
   useEffect(() => clearTimers, [clearTimers]);
+  useEffect(() => {
+    if (activeTurn && !state.agent.activeRunId) { clearTimers(); setActiveTurn(null); setRevealingTurnId(null); }
+  }, [activeTurn, clearTimers, state.agent.activeRunId]);
   const submit = useCallback((text: string, context?: AgentTurnContext) => {
     if (!text.trim() || activeTurn) return false;
     clearTimers();

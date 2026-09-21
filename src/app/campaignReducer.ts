@@ -98,9 +98,8 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
       }
       if (intent.type === "ContinuePlan") return { ...state, agent: continueFromBrief({ ...state.agent, messages: action.skipUser ? state.agent.messages : [...state.agent.messages, { ...userMessage, createdAt: "2026-09-21T09:20:00+08:00" }] }) };
       if (intent.type === "NextStep" && next) {
-        const alreadyShown = state.agent.messages.some((message) => message.type === "NextAction" && message.payloadRef === nextPayloadRef);
         const messages = [...messagesWithUser];
-        if (!alreadyShown) messages.push({ id: `message-agent-${suffix}`, runId: state.agent.activeRunId, role: "Agent", type: "NextAction", text: `${next.reason} ${next.outcome}`, payloadRef: nextPayloadRef, createdAt: "2026-09-21T09:15:01+08:00" });
+        messages.push({ id: `message-agent-${suffix}`, runId: state.agent.activeRunId, role: "Agent", type: "NextAction", text: `${next.reason} ${next.outcome}`, payloadRef: nextPayloadRef, createdAt: "2026-09-21T09:15:01+08:00" });
         return { ...state, agent: { ...state.agent, messages } };
       }
       if (intent.type === "Status") {
@@ -119,9 +118,17 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
       }
       const candidate = action.context?.candidateId ? state.candidates.find((item) => item.id === action.context!.candidateId) : undefined;
       const searchPackage = candidate ? state.searchPackages.find((item) => item.matrixCellId === candidate.matrixCellId) : undefined;
+      const detailed = candidate && searchPackage ? qualifyCandidateDetailed(candidate, searchPackage) : null;
+      const normalizedQuestion = action.text.toLowerCase();
       const acknowledgement = intent.type === "ExplainCandidate"
           ? candidate && searchPackage
-            ? `${candidate.creatorName} 对应 ${candidate.matrixCellId}：${candidate.evidence[0]?.views.toLocaleString() ?? 0} 次可核验${candidate.ridingScenario}骑行播放，证据包含 ${candidate.evidence[0]?.proofPoints.slice(0, 3).join("、") || "缺失"}；资格为 ${qualifyCandidate(candidate, searchPackage).status}，综合匹配分 ${candidateScore(candidate).total.toFixed(1)}，报价 $${candidate.quote.total.toLocaleString()}。`
+            ? /预算|报价/.test(normalizedQuestion)
+              ? `${candidate.creatorName} 当前报价 $${candidate.quote.total.toLocaleString()}，Matrix 单人上限 $${searchPackage.budgetCeilingPerCreator.toLocaleString()}；商业门禁为 ${detailed?.gates.find((gate) => gate.id === "commercial")?.status}。${candidate.quote.status === "Estimated" ? "当前仍是估价，发布前需要确认。" : "报价已收到。"}`
+              : /风险/.test(normalizedQuestion)
+                ? `${candidate.creatorName} 的主要风险：${detailed?.risks.join("；") || "当前没有阻塞性风险"}。资格结论为 ${detailed?.status}，硬门禁不会被 Fit Score 覆盖。`
+                : /证据|头戴|pov/.test(normalizedQuestion)
+                  ? `${candidate.creatorName} 的头戴摄像头证据来自 ${detailed?.evidenceIds.join("、") || "缺失"}：${candidate.evidence.flatMap((item) => item.proofPoints).filter((point, index, all) => all.indexOf(point) === index).join("、") || "没有可核验证据"}。相关门禁为 ${detailed?.gates.find((gate) => gate.id === "head-camera-proof")?.status}。`
+                  : `${candidate.creatorName} 对应 ${candidate.matrixCellId}：${candidate.evidence[0]?.views.toLocaleString() ?? 0} 次可核验${candidate.ridingScenario}骑行播放，证据包含 ${candidate.evidence[0]?.proofPoints.slice(0, 3).join("、") || "缺失"}；资格为 ${detailed?.status}，综合匹配分 ${detailed?.score?.total.toFixed(1) ?? "不参与排序"}，报价 $${candidate.quote.total.toLocaleString()}。`
             : "当前没有可解释的候选人上下文。请从候选人卡片点击 Ask Agent。"
           : intent.type === "FindSimilar"
             ? candidate

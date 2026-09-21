@@ -417,6 +417,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .agent-turn-trace.is-complete { padding: 12px 16px; background: var(--white); }.agent-turn-trace summary { cursor: pointer; font-size: var(--text-meta); font-weight: 700; }.agent-turn-trace.is-complete p { display: flex; gap: 8px; margin: 10px 0 0; font-size: var(--text-meta); }
 .typing-caret { display: inline-block; width: 1px; height: 1em; margin-left: 2px; vertical-align: -.1em; background: currentColor; animation: caret-blink .7s steps(1) infinite; }
 .jump-to-latest { position: absolute; right: 28px; bottom: 112px; z-index: 6; padding: 9px 13px; border: 1px solid var(--black); border-radius: 99px; background: var(--white); box-shadow: var(--shadow-hover); }
+.agent-stream { position: relative; }
 @keyframes turn-step-in { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes caret-blink { 50% { opacity: 0; } }
 @media (max-width: 1320px) { .qualification-workspace { grid-template-columns: 1fr; }.calibration-candidate-nav { grid-template-columns: 1fr auto; }.calibration-sequence { grid-column: 1 / -1; order: 3; }.calibration-action-bar { grid-template-columns: 1fr; }.calibration-readiness { justify-content: space-between; } }

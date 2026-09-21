@@ -5,6 +5,12 @@ import { campaignReducer } from "../app/campaignReducer";
 import { campaignSeed } from "../data/seed";
 
 describe("context-aware Agent actions", () => {
+  it("keeps evidence, risk and budget questions in candidate context", () => {
+    for (const input of ["哪条证据证明适合头戴摄像头？", "他有什么风险？", "他的预算风险？"]) {
+      expect(resolveAgentIntent(input, { state: campaignSeed, candidateId: "creator-01" }).intent.type).toBe("ExplainCandidate");
+    }
+  });
+
   it("does not offer candidate commands without candidate context", () => {
     const actions = availableActions(campaignSeed, {});
     expect(actions.map((item) => item.label)).not.toContain("为什么推荐他");

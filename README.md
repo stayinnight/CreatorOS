@@ -24,6 +24,8 @@ npm run build
 
 ## 中文验收流程与演示顺序
 
+资格校准与分阶段 Agent Turn 的详细步骤见 [`docs/验收流程-资格校准与Agent交互.md`](docs/验收流程-资格校准与Agent交互.md)。
+
 1. 在 **Inbox** 打开 `Cycling Camera Launch`，说明这是需要人工判断的 Campaign，而不是功能导航页。
 2. 点击 **Analyze 3 materials**，查看 Agent 对 Email、Excel、Meeting Notes 给出的执行计划，再点击 **Start run**。
 3. 依次处理两张 Decision Card：上线周期选择 `8 weeks · Excel`；相邻运动范围选择 `Pending; excluded from current plan`。确认 Agent 在决策前不会越权推进。
