@@ -3,7 +3,7 @@ import { publishBrief, resolveConflict } from "../domain/brief";
 import { evaluateMatrix, lockMatrix, summarizeMatrix } from "../domain/matrix";
 import type { CampaignState, MatrixRow } from "../domain/model";
 import { generateSearchPackages } from "../domain/search";
-import { qualifyCandidate } from "../domain/candidate";
+import { candidateScore, qualifyCandidate } from "../domain/candidate";
 import { assessGap } from "../domain/gap";
 import type { CandidateDecision } from "../domain/model";
 import { planMaterialRun, registerArtifact, resolveWorkflowDecision, selectArtifact, startMaterialRun } from "../agent/workflow";
@@ -63,12 +63,18 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
     case "SEND_AGENT_MESSAGE": {
       const intent = parseAgentIntent(action.text, action.context);
       const suffix = state.agent.messages.length + 1;
+      const candidate = action.context?.candidateId ? state.candidates.find((item) => item.id === action.context!.candidateId) : undefined;
+      const searchPackage = candidate ? state.searchPackages.find((item) => item.matrixCellId === candidate.matrixCellId) : undefined;
       const acknowledgement = intent.type === "ScopeRun"
         ? "明白。本次先完成 Brief 整理；Matrix 和候选人工作会保持待办，不会自动推进。"
         : intent.type === "ExplainCandidate"
-          ? "我会基于可核验骑行内容、场景匹配度、制作能力和商业条件解释推荐原因。"
+          ? candidate && searchPackage
+            ? `${candidate.creatorName} 对应 ${candidate.matrixCellId}：${candidate.evidence[0]?.views.toLocaleString() ?? 0} 次可核验${candidate.ridingScenario}骑行播放，证据包含 ${candidate.evidence[0]?.proofPoints.slice(0, 3).join("、") || "缺失"}；资格为 ${qualifyCandidate(candidate, searchPackage).status}，综合匹配分 ${candidateScore(candidate).total.toFixed(1)}，报价 $${candidate.quote.total.toLocaleString()}。`
+            : "当前没有可解释的候选人上下文。请从候选人卡片点击 Ask Agent。"
           : intent.type === "FindSimilar"
-            ? "我会保留当前候选人的场景与平台约束，并提高生活化内容偏好。"
+            ? candidate
+              ? `同一 Matrix 单元格中更生活化的备选：${state.candidates.filter((item) => item.id !== candidate.id && item.matrixCellId === candidate.matrixCellId && !state.agent.calibrationFeedback[item.id]).sort((a, b) => candidateScore(b).total - candidateScore(a).total).slice(0, 2).map((item) => `${item.creatorName} (${candidateScore(item).total.toFixed(1)})`).join("、") || "暂无"}。硬约束保持不变。`
+              : "请先从候选人卡片选择上下文，再查找相似人选。"
             : `This deterministic demo can handle the suggested campaign actions; it does not call a general-purpose model. Try: ${intent.suggestions.join(" / ")}.`;
       return { ...state, agent: { ...state.agent, messages: [
         ...state.agent.messages,

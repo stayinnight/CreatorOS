@@ -1,8 +1,8 @@
-# Creator Mix Planner
+# Campaign Agent Desk
 
-这是一个可在本地运行、结果可重复的达人营销规划 Demo，服务于**美国和英国市场的骑行头戴摄像头发布活动**。它完整串起了：多来源需求整理、冲突确认、达人矩阵锁定、证据校验、客户反馈和定向补量。
+这是一个可在本地运行、结果可重复的 Creator Marketing Agent Demo，业务背景固定为**美国和英国市场的骑行头戴摄像头发布活动**。
 
-本项目重点做深 Matrix：成本、播放量、CPM、覆盖约束、版本锁定、搜索包生成、预测缺口和修复动作都由真实的 TypeScript 领域逻辑计算。飞书、Gmail、公开搜索和报价收集均明确标注为模拟能力。
+产品形态不是多个功能模块的拼接，而是一个完整的 Agent 工作台：用户从待办 Inbox 进入 Campaign，向 Agent 提交客户材料；Agent 先给出计划，再执行低风险工作，并在需求冲突、Matrix 锁定、校准方向和客户发布等高影响节点暂停等待人工判断。Brief、Creator Mix、Search Package、候选人批次和客户反馈都作为带来源关系的 Artifact 在同一工作流中打开。
 
 ## 本地运行与验证
 
@@ -13,108 +13,47 @@ npm install
 npm run dev
 ```
 
-打开 Vite 在终端中输出的本地地址。操作状态会保存在 `localStorage` 中；如需重新演示，点击页面右上角的 **Reset demo**，即可恢复到固定初始数据。
+打开 Vite 输出的本地地址。状态保存在 `localStorage`；左下角 **Reset demo** 可恢复固定初始数据。
 
-提交或演示前，执行完整验证：
+提交或演示前执行：
 
 ```bash
 npm test
 npm run build
 ```
 
-预期结果：`npm test` 显示 10 个测试文件、22 项测试全部通过；`npm run build` 成功生成 `dist/` 产物。
+## 中文验收流程与演示顺序
 
-## 5–8 分钟演示顺序
+1. 在 **Inbox** 打开 `Cycling Camera Launch`，说明这是需要人工判断的 Campaign，而不是功能导航页。
+2. 点击 **Analyze 3 materials**，查看 Agent 对 Email、Excel、Meeting Notes 给出的执行计划，再点击 **Start run**。
+3. 依次处理两张 Decision Card：上线周期选择 `8 weeks · Excel`；相邻运动范围选择 `Pending; excluded from current plan`。确认 Agent 在决策前不会越权推进。
+4. 从右侧 Artifact 区打开 **Brief v1**，检查三份来源、两个已解决冲突，以及骑行头戴摄像头的市场、预算、播放量和证据要求。
+5. 点击 **Build mix options**，打开 Mix Artifact；比较两个方向，先用 **Test failure** 制造长视频与场景覆盖缺口，确认无效 Matrix 不能锁定；再 **Restore**、锁定 Matrix，并生成 6 个有明确单元格来源的 Search Package。
+6. 从 Search Package Artifact 点击 **Build calibration batch**。检查 10 人校准批次：8 个合格方向，以及摩托车冒充骑行、缺失证据两个显式反例。选择候选人并用固定原因 Reject，确认反馈只形成当前 Campaign 的偏好，不篡改 Brief 硬约束。
+7. 点击 **Approve & expand**，由 Agent 生成 30 名客户候选人和 10 名内部 Backup；执行 **Validate slate**，先打开 **Client preview** 检查字段隔离，再批准发布 Round 1。
+8. 在 Review Artifact 中点击 **Apply feedback**，模拟客户 Pass UK Urban 候选人。Gap Artifact 会定位受影响的 Matrix 单元格；先 **Promote backup**，再只为 UK Urban 创建 replenishment。确认 Brief 与锁定的 Mix 均未失效。
+9. 打开 **Runs**，检查目标、当前/最终步骤、起止时间、Artifact 数量、失败信息和局部恢复轨迹。
 
-### 1. Overview：先讲清业务背景
+## 验收重点
 
-进入 **Overview**，先说明这不是通用达人 CRM，而是针对骑行头戴摄像头的决策闭环。核心要求不是泛运动流量，而是创作者必须在真实的 Road、MTB、Urban 骑行场景中证明第一人称拍摄、稳定、防护记录和不同光线表现。
+- 全局入口只有 Inbox、Campaigns、Runs；Campaign 默认打开 Agent Run，而不是仪表盘或功能 Tab。
+- Agent 在运行前展示计划，在需求冲突和外部发布等高风险动作前暂停。
+- Matrix 的预算、播放量、CPM、YouTube、长视频、US/UK、Road/MTB/Urban 约束都由真实领域逻辑计算；硬约束失败时不能锁定。
+- 候选人必须有可核验的真实骑行证据；高播放量摩托车内容和无证据资料不会被悄悄放行。
+- 客户首轮严格为 30 人，10 名 Backup 只在内部可见；Client Preview 使用显式字段白名单。
+- 客户反馈只触发局部 Gap 和补量，不会回写 Brief 或破坏锁定 Matrix。
+- Reset、v2 本地持久化、完整 Run History、自动化测试和生产构建均可用。
 
-### 2. Brief：展示需求冲突如何被显式解决
+## Agent 能力边界
 
-进入 **Brief**，依次说明 Email、Excel 和 Meeting Notes 三个来源。现场处理两个冲突：
+本 Demo 的 Agent 是**确定性的，不调用在线 AI 模型**。自然语言输入只支持界面中给出的有限意图，例如“先只整理 Brief”“为什么推荐他”“找相似但更生活化的人”；超出范围的输入会明确说明边界并给出可用建议，不会伪装成通用模型。
 
-- 上线周期选择 **8 weeks · Excel**；
-- Motorcycle / Skiing 选择 **Pending; excluded from current plan**。
-
-两个冲突解决后发布 Brief v1。这里要强调：系统不会悄悄替客户做决定，存在冲突就必须留下明确结论和来源。
-
-### 3. Mix Planner：演示本次做深的核心能力
-
-进入 **Mix Planner**，先比较两个方案：
-
-- **Credibility First**：用长视频建立可信度；
-- **Reach Efficiency**：保留长视频底线，同时增加短视频触达。
-
-在 Scenario A 中点击 **Simulate long-form gap**，观察长视频达人数量和 UK / Urban 覆盖不足，锁定按钮被硬约束阻止。随后点击 **Restore scenario** 恢复方案，确认预算、播放量、CPM、YouTube、长视频数量、国家和骑行场景全部通过，再执行：
-
-1. **Lock Matrix v1**；
-2. **Generate search packages**。
-
-最终生成 6 个与 Matrix 单元格一一关联的搜索包。
-
-### 4. Search & Candidates：证明没有 AI 模型也能稳定做资格判断
-
-进入 **Search & Candidates**，先查看每个搜索包的目标人数、候选人数、单人预算上限、最低播放量、证据要求和排除规则，然后点击 **Load 2 seeded batches** 加载 42 个固定候选人。
-
-重点打开两个反例：
-
-- **Torque Atlas**：播放量很高，但只有摩托车内容，没有真实骑行证据，因此被判定为 Disqualified；
-- **Open Air Edit**：没有可核验内容证据，因此进入 Needs Review，而不是由系统猜测通过。
-
-再打开一个正常候选人，展示真实骑行证据、透明加权评分、报价、版权成本和 Matrix 单元格预算上限。
-
-### 5. Client Review：展示 30 + 10 和信息隔离
-
-进入 **Client Review**，在 Internal 视图确认：
-
-- 客户首轮正好 30 名合格达人；
-- 内部保留 10 名合格 Backup；
-- 投影检查为 PASS。
-
-点击 **Publish Round 1** 并切换到 Client projection。说明客户只能看到达人信息、骑行证据、交付物、报价区间、版权摘要和决策按钮；内部评分细项、历史价格、内部备注、付款条款和 Backup 策略不会泄漏。
-
-### 6. Feedback → Gap → Recovery：完成最小业务闭环
-
-点击 **Apply & submit seeded feedback**，模拟客户 Pass 掉 UK Urban 候选人。系统只重新计算 Forecast，不修改已经锁定的 Matrix，并明确显示缺失的创作者数量和播放量。
-
-按推荐顺序执行：
-
-1. **Promote backup**：优先晋升现有合格备选，避免破坏原计划；
-2. **Create replenishment**：为仍然缺人的 Matrix 单元格创建一个带父子关系的补量搜索包。
-
-到这里，Brief → Matrix → Search Package → Candidate → Client Feedback → Gap → Recovery 的闭环完成。
-
-### 7. Activity：用审计记录收尾
-
-进入 **Activity**，展示 Brief 发布、Matrix 锁定、搜索包生成、候选批次加载、客户评审发布、反馈提交、Backup 晋升和补量任务创建的时间线。右侧飞书与 Gmail 仅为明确标注的模拟预览，不会真的发送外部消息。
-
-## 验收清单
-
-- 总预算不超过 180,000 美元，并且包含版权成本；预计播放量不少于 260 万；混合 CPM 不高于 70 美元。
-- 方案必须包含 YouTube，至少有 3 名长视频达人，同时覆盖 US / UK 和 Road / MTB / Urban。
-- Brief 冲突未解决时不能发布；Matrix 硬约束未通过时不能锁定。
-- 每个搜索包都保留 Brief、Matrix 版本和 Matrix 单元格的来源关系。
-- 真实骑行证据是硬门槛；摩托车内容和缺失证据不能悄悄进入客户名单。
-- 第一轮客户名单必须正好 30 人，内部另有至少 10 名合格备选。
-- 客户视图使用显式字段白名单，并有自动化测试防止内部敏感字段泄漏。
-- 客户反馈只改变预测结果，不会回写或篡改锁定后的 Matrix。
-- 出现缺口时先晋升匹配的 Backup；仍有缺口才创建补量搜索包。
-- 点击 **Reset demo** 后可以恢复固定初始数据，重新完整演示。
-- 执行 `npm test` 和 `npm run build` 均成功。
-
-## 范围边界
-
-已实现：单一固定 Campaign、两个 Matrix 场景、确定性数据、纯领域计算、达人证据与资格校验、客户安全投影、缺口修复、本地持久化和响应式界面。
-
-未实现：后端、登录鉴权、数据库、在线 AI 提取、实时达人搜索、爬虫、真实消息发送、报价谈判、通用工作流引擎和生产级并发。这些是为了保证 12 小时内交付高质量闭环而主动控制的范围，不是隐藏的 Mock。
+用户在 Decision Card、Matrix、校准和发布环节的操作会真实改变计算结果、状态迁移和下游 Artifact。飞书、Gmail、公开搜索、实时报价和真实外发均不在本地 Demo 中执行。
 
 ## 项目结构
 
-- `src/domain/`：可测试的业务规则与计算逻辑。
-- `src/data/seed.ts`：包含 42 名候选人的固定 Campaign 数据。
-- `src/pages/`：六个业务页面。
-- `src/tests/`：覆盖公式、门禁、客户投影、持久化和完整闭环。
-- `fixtures/search-package.example.json`：一个真实生成的下游 Search Package 示例。
-- `decision.md`：产品与工程取舍、AI 使用边界。
-- `docs/superpowers/specs/`：已确认的产品规格。
+- `src/agent/`：Run、Step、Decision、Artifact、有限意图与校准逻辑。
+- `src/domain/`：Brief、Matrix、候选人资格、客户投影与 Gap 计算。
+- `src/components/agent/`：Agent Timeline、消息卡、Context Rail 和 Artifact Inspector。
+- `src/data/seed.ts`：固定 Campaign、Matrix 与 42 名候选人数据。
+- `src/tests/`：覆盖领域规则、完整 Agent 闭环、投影安全和持久化迁移。

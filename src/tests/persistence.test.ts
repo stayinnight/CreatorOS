@@ -13,7 +13,17 @@ describe("local campaign persistence", () => {
   });
 
   it("rejects malformed local data instead of booting corrupt state", () => {
-    localStorage.setItem("creator-mix-planner:v1", JSON.stringify({ id: "broken" }));
+    localStorage.setItem("creator-mix-planner:v2", JSON.stringify({ id: "broken" }));
     expect(loadState()).toBeNull();
+    expect(localStorage.getItem("creator-mix-planner:v2")).toBeNull();
+  });
+
+  it("does not load v1 state and reset removes both storage generations", () => {
+    localStorage.setItem("creator-mix-planner:v1", JSON.stringify(campaignSeed));
+    expect(loadState()).toBeNull();
+    saveState(campaignSeed);
+    resetState();
+    expect(localStorage.getItem("creator-mix-planner:v1")).toBeNull();
+    expect(localStorage.getItem("creator-mix-planner:v2")).toBeNull();
   });
 });
