@@ -2,7 +2,7 @@
 
 Date: 2026-09-21  
 Status: Approved design, pending user review of written specification  
-Time budget: 12 hours total implementation time
+Time budget: 12-hour end-to-end submission window, including user acceptance and final fixes
 
 ## 1. Objective
 
@@ -78,7 +78,7 @@ The fixed demo campaign is `Cycling Camera Launch · US / UK`. The workspace con
 5. Client Review
 6. Activity
 
-The global campaign list and campaign creation flow are excluded from the 12-hour MVP. A campaign header remains visible and shows brief version, matrix version, stage, budget, expected views, blended CPM, and unresolved items.
+The global campaign list and campaign creation flow are excluded from the time-boxed MVP. A campaign header remains visible and shows brief version, matrix version, stage, budget, expected views, blended CPM, and unresolved items.
 
 ## 5. Primary users
 
@@ -506,7 +506,7 @@ Minimum tests:
 - Locked-version immutability.
 - One integration-style test for the whole seeded flow.
 
-Playwright is excluded from the 12-hour MVP unless all required work is complete early.
+Playwright is excluded from the MVP. Optional engineering work cannot consume the user-acceptance reserve.
 
 ## 21. Acceptance walkthrough
 
@@ -530,7 +530,16 @@ The demo provides a Reset Demo action so reviewers can always return to the same
 - One-command test suite.
 - `decision.md`: AI usage, accepted and rejected suggestions, one bad case, validation method, and next step.
 
-## 23. Twelve-hour scope guard
+## 23. End-to-end time box and scope guard
+
+The twelve-hour window includes implementation, self-verification, user acceptance, and final corrections. The target schedule is:
+
+- Hours 0–8: implementation of the mandatory path.
+- Hour 8–9: automated tests, manual walkthrough, documentation, and handoff packaging.
+- Hours 9–11: user acceptance.
+- Hours 11–12: acceptance fixes and final packaging.
+
+Engineering must hand off a complete candidate build by hour nine. It must not consume the user-acceptance reserve.
 
 ### Must complete
 
@@ -545,7 +554,7 @@ The demo provides a Reset Demo action so reviewers can always return to the same
 - Gap plus backup/replenishment action.
 - README, decision log, fixtures, and required tests.
 
-### Complete only if time remains
+### Deferred until after user acceptance
 
 - Project JSON export/import.
 - Advanced table filters.
@@ -553,6 +562,8 @@ The demo provides a Reset Demo action so reviewers can always return to the same
 - Multiple client review rounds beyond the seeded path.
 - Additional integration failure controls.
 - Browser E2E automation.
+
+These items are not started merely because implementation appears ahead of schedule. Early completion is used for verification and earlier user handoff.
 
 ### Explicitly excluded
 
@@ -582,4 +593,3 @@ The work is complete only when:
 - Real and mocked behavior is clearly labeled.
 - The project starts and tests with documented commands.
 - Reset Demo restores the expected initial state.
-
