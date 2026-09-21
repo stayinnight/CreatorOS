@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { campaignReducer } from "../app/campaignReducer";
+import { getRecommendedNextAction } from "../agent/recommendedAction";
 import { campaignSeed } from "../data/seed";
 
 function reachApprovedCalibration() {
@@ -36,7 +37,12 @@ describe("Agent client approval and recovery", () => {
     const unaffected = state.agent.artifacts.filter((item) => item.kind === "Brief" || item.kind === "Mix");
     expect(unaffected.every((item) => item.status !== "Stale")).toBe(true);
     state = campaignReducer(state, { type: "PROMOTE_BACKUP", candidateId: state.gapAssessment!.backupCandidateId! });
+    const gapArtifactId = state.agent.selectedArtifactId;
     state = campaignReducer(state, { type: "CREATE_REPLENISHMENT", packageId: state.gapAssessment!.packageId });
     expect(state.searchPackages.find((item) => item.parentPackageId)?.matrixCellId).toContain("uk-urban");
+    const resultArtifact = state.agent.artifacts.find((item) => item.domainRef.endsWith("-replenishment-01"));
+    expect(resultArtifact).toEqual(expect.objectContaining({ kind: "SearchPackageSet", status: "Ready" }));
+    expect(state.agent.selectedArtifactId).toBe(gapArtifactId);
+    expect(getRecommendedNextAction(state)?.command).toEqual({ kind: "open", artifactId: resultArtifact!.id });
   });
 });

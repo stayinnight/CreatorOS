@@ -333,7 +333,20 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
       const parent = state.searchPackages.find((item) => item.id === action.packageId);
       if (!parent) return state;
       const replenishment = { ...parent, id: `${parent.id}-replenishment-01`, status: "Ready" as const, parentPackageId: parent.id, dueAt: "2026-10-01" };
-      const agent = { ...state.agent, steps: state.agent.steps.map((step) => step.id === "step-recover" ? { ...step, status: "Succeeded" as const, summary: `Replenished ${parent.market} ${parent.ridingScenario} only`, completedAt: "2026-09-21T10:30:00+08:00" } : step), runs: state.agent.runs.map((run) => run.id === state.agent.activeRunId ? { ...run, status: "Completed" as const, currentStepId: null, completedAt: "2026-09-21T10:30:00+08:00" } : run), messages: [...state.agent.messages, { id: "message-run-complete", runId: state.agent.activeRunId, role: "Agent" as const, type: "Text" as const, text: `Local recovery complete for ${parent.market} ${parent.ridingScenario}. Campaign workflow is complete; upstream artifacts were preserved.`, payloadRef: replenishment.id, createdAt: "2026-09-21T10:30:00+08:00" }] };
+      let agent = registerArtifact(state.agent, {
+        id: "artifact-replenishment-01",
+        campaignId: state.id,
+        kind: "SearchPackageSet",
+        version: 2,
+        status: "Ready",
+        sourceRunId: "run-brief-to-shortlist",
+        sourceStepId: "step-recover",
+        parentArtifactIds: ["artifact-gap-round-01"],
+        domainRef: replenishment.id,
+        summary: `Recovery result ready · ${parent.market} ${parent.ridingScenario} replenishment created`,
+        createdAt: "2026-09-21T10:30:00+08:00",
+      });
+      agent = { ...agent, steps: agent.steps.map((step) => step.id === "step-recover" ? { ...step, status: "Succeeded" as const, summary: `Replenished ${parent.market} ${parent.ridingScenario} only`, completedAt: "2026-09-21T10:30:00+08:00" } : step), runs: agent.runs.map((run) => run.id === agent.activeRunId ? { ...run, status: "Completed" as const, currentStepId: null, completedAt: "2026-09-21T10:30:00+08:00" } : run), messages: [...agent.messages, { id: "message-run-complete", runId: agent.activeRunId, role: "Agent" as const, type: "Text" as const, text: `Local recovery complete for ${parent.market} ${parent.ridingScenario}. Campaign workflow is complete; upstream artifacts were preserved.`, payloadRef: replenishment.id, createdAt: "2026-09-21T10:30:00+08:00" }] };
       return { ...state, agent, searchPackages: [...state.searchPackages, replenishment], activity: [...state.activity, activity(`Replenishment package created · ${parent.market} ${parent.ridingScenario}`)] };
     }
   }
