@@ -36,4 +36,15 @@ describe("recommended campaign action", () => {
     expect(getActionLifecycle(state, "lock-matrix")).toBe("Completed");
     expect(getActionLifecycle(state, "generate-packages")).toBe("Current");
   });
+
+  it("keeps approval and recovery recommendations directly executable", () => {
+    let state = reachMix();
+    state = campaignReducer(state, { type: "LOCK_MATRIX", scenarioId: state.activeScenarioId });
+    state = campaignReducer(state, { type: "GENERATE_PACKAGES", scenarioId: state.activeScenarioId });
+    state = campaignReducer(state, { type: "START_SOURCING" });
+    expect(getRecommendedNextAction(state)?.command).toEqual({ kind: "dispatch", action: { type: "APPROVE_CALIBRATION" } });
+
+    state = campaignReducer(state, { type: "APPROVE_CALIBRATION" });
+    expect(getRecommendedNextAction(state)?.id).toBe("validate-slate");
+  });
 });

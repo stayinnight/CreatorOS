@@ -126,11 +126,11 @@ export function getRecommendedNextAction(state: CampaignState): RecommendedActio
     return recommendation(
       "review-calibration",
       "Calibration waiting",
-      "Review the calibration batch",
-      "The Agent needs your quality direction before scaling.",
+      "Approve the calibration direction",
+      "Review the ten examples below, then approve the quality pattern before scaling.",
       "Applies your feedback before the 30 + 10 slate is prepared.",
-      "Review calibration",
-      { kind: "open", artifactId: calibration.id },
+      "Approve & expand",
+      { kind: "dispatch", action: { type: "APPROVE_CALIBRATION" } },
     );
   }
 
@@ -159,16 +159,29 @@ export function getRecommendedNextAction(state: CampaignState): RecommendedActio
     );
   }
 
+  const activeRun = state.agent.runs.find((item) => item.id === state.agent.activeRunId);
+  if (activeRun?.status === "Completed") {
+    const result = [...state.agent.artifacts].reverse().find((item) => item.status !== "Stale");
+    return result ? recommendation("view-result", "Run complete", "View the latest result", "The campaign workflow is complete.", "Opens the latest retained artifact.", "View result", { kind: "open", artifactId: result.id }) : null;
+  }
+
   const gap = state.agent.artifacts.find((item) => item.kind === "GapAssessment");
   if (gap) {
+    const backupCandidateId = state.gapAssessment?.backupCandidateId;
+    const packageId = state.gapAssessment?.packageId;
+    const command = backupCandidateId
+      ? { kind: "dispatch" as const, action: { type: "PROMOTE_BACKUP" as const, candidateId: backupCandidateId } }
+      : packageId
+        ? { kind: "dispatch" as const, action: { type: "CREATE_REPLENISHMENT" as const, packageId } }
+        : { kind: "open" as const, artifactId: gap.id };
     return recommendation(
       "recover-gap",
       "Local gap found",
       "Recover the affected Matrix cell",
       "Client feedback created a bounded coverage gap.",
       "Promotes a backup or replenishes only the affected package.",
-      "Open gap recovery",
-      { kind: "open", artifactId: gap.id },
+      backupCandidateId ? "Promote qualified backup" : "Create replenishment",
+      command,
     );
   }
 
