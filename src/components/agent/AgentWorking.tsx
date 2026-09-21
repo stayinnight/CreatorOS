@@ -7,5 +7,9 @@ export function workingStagesFor(input: string) {
 }
 
 export function AgentWorking({ input }: { input: string }) {
-  return <div className="turn-transition" aria-live="polite"><div className="pending-user-message">{input}</div><section className="agent-working"><header><span className="working-mark" /><strong>Agent working</strong></header>{workingStagesFor(input).map((stage, index) => <div key={stage} style={{ animationDelay: `${index * 120}ms` }}><i>{index + 1}</i><span>{stage}</span></div>)}</section></div>;
+  const { locale } = useLanguage();
+  const englishStages = ["Understand current intent", "Check workflow state", "Prepare next step"];
+  const stages = locale === "zh-CN" ? workingStagesFor(input) : englishStages;
+  return <div className="turn-transition" aria-live="polite"><div className="pending-user-message">{input}</div><section className="agent-working"><header><span className="working-mark" /><strong>{locale === "zh-CN" ? "Agent 正在工作" : "Agent working"}</strong></header>{stages.map((stage, index) => <div key={stage} style={{ animationDelay: `${index * 120}ms` }}><i>{index + 1}</i><span>{stage}</span></div>)}</section></div>;
 }
+import { useLanguage } from "../../i18n/LanguageProvider";

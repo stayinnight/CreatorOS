@@ -28,6 +28,6 @@ export function CampaignDeskPage() {
       {chatScroll.showJumpToLatest && <button className="jump-to-latest" type="button" onClick={chatScroll.jumpToLatest}>{t("desk.latest")}</button>}
       <AgentComposer turn={turn} />
     </main>
-    {artifact ? <ArtifactInspector artifact={artifact} phase={transition.phase} revealKey={transition.revealKey} onClose={transition.closeArtifact} onOpenArtifact={transition.openArtifact} onAskAgent={turn.submit} onPerformAction={turn.performAction} /> : transition.openingArtifactId ? <aside className="artifact-inspector is-opening" aria-label="Opening artifact" aria-busy="true"><div className="inspector-skeleton"><i /><i /><i /><i /></div></aside> : <ContextRail />}
+    {artifact ? <ArtifactInspector artifact={artifact} phase={transition.phase} revealKey={transition.revealKey} onClose={transition.closeArtifact} onOpenArtifact={transition.openArtifact} onAskAgent={turn.submit} onPerformAction={turn.performAction} /> : transition.openingArtifactId ? <aside className="artifact-inspector is-opening" aria-label={locale === "zh-CN" ? "正在打开产物" : "Opening artifact"} aria-busy="true"><div className="inspector-skeleton"><i /><i /><i /><i /></div></aside> : <ContextRail />}
   </div>;
 }
