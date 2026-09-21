@@ -41,7 +41,7 @@ export function planMaterialRun(agent: AgentWorkspaceState): AgentWorkspaceState
   return {
     ...agent,
     activeRunId: RUN_ID,
-    runs: [{ id: RUN_ID, campaignId: "campaign-cycling-camera", goal: "Turn client materials into a review-ready creator shortlist", status: "Planned", currentStepId: "step-read", stepIds: steps.map((step) => step.id), inputArtifactIds: [], outputArtifactIds: [], startedAt: null, completedAt: null }],
+    runs: [{ id: RUN_ID, campaignId: "campaign-cycling-camera", goal: "Turn client materials into a review-ready creator shortlist", scope: "FullCampaign", continuationOfRunId: null, status: "Planned", currentStepId: "step-read", stepIds: steps.map((step) => step.id), inputArtifactIds: [], outputArtifactIds: [], startedAt: null, completedAt: null }],
     steps: structuredClone(steps),
     messages: [...agent.messages,
       { id: "message-user-materials", runId: RUN_ID, role: "User", type: "Text", text: "Analyze the client email, budget workbook, and kickoff notes for the cycling camera launch.", payloadRef: null, createdAt: AT },

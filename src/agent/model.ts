@@ -22,6 +22,8 @@ export interface AgentRun {
   id: string;
   campaignId: string;
   goal: string;
+  scope: "FullCampaign" | "BriefOnly";
+  continuationOfRunId: string | null;
   status: AgentRunStatus;
   currentStepId: string | null;
   stepIds: string[];

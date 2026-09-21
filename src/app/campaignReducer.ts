@@ -9,6 +9,7 @@ import type { CandidateDecision } from "../domain/model";
 import { planMaterialRun, registerArtifact, resolveWorkflowDecision, selectArtifact, startMaterialRun } from "../agent/workflow";
 import { resolveAgentIntent } from "../agent/intent";
 import { answerCampaignFact } from "../agent/facts";
+import { reviseRunToBriefOnly } from "../agent/runRevision";
 import { buildCalibrationBatch, preferenceForReason } from "../agent/calibration";
 import { validateReviewRound } from "../domain/review";
 
@@ -65,11 +66,13 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
       const resolution = resolveAgentIntent(action.text, { state, ...action.context });
       const intent = resolution.intent;
       const suffix = state.agent.messages.length + 1;
+      if (intent.type === "ScopeRun") {
+        const withUser = { ...state.agent, messages: [...state.agent.messages, { id: `message-user-${suffix}`, runId: state.agent.activeRunId, role: "User" as const, type: "Text" as const, text: action.text, payloadRef: null, createdAt: "2026-09-21T09:15:00+08:00" }] };
+        return { ...state, agent: reviseRunToBriefOnly(withUser) };
+      }
       const candidate = action.context?.candidateId ? state.candidates.find((item) => item.id === action.context!.candidateId) : undefined;
       const searchPackage = candidate ? state.searchPackages.find((item) => item.matrixCellId === candidate.matrixCellId) : undefined;
-      const acknowledgement = intent.type === "ScopeRun"
-        ? "明白。本次先完成 Brief 整理；Matrix 和候选人工作会保持待办，不会自动推进。"
-        : intent.type === "ExplainCandidate"
+      const acknowledgement = intent.type === "ExplainCandidate"
           ? candidate && searchPackage
             ? `${candidate.creatorName} 对应 ${candidate.matrixCellId}：${candidate.evidence[0]?.views.toLocaleString() ?? 0} 次可核验${candidate.ridingScenario}骑行播放，证据包含 ${candidate.evidence[0]?.proofPoints.slice(0, 3).join("、") || "缺失"}；资格为 ${qualifyCandidate(candidate, searchPackage).status}，综合匹配分 ${candidateScore(candidate).total.toFixed(1)}，报价 $${candidate.quote.total.toLocaleString()}。`
             : "当前没有可解释的候选人上下文。请从候选人卡片点击 Ask Agent。"
@@ -116,7 +119,10 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
       if (agent.decisions.some((item) => item.status === "Pending")) return { ...state, brief, agent };
       const published = publishBrief(brief);
       agent = registerArtifact(agent, { id: "artifact-brief-v1", campaignId: state.id, kind: "Brief", version: 1, status: "Published", sourceRunId: "run-brief-to-shortlist", sourceStepId: "step-conflicts", parentArtifactIds: [], summary: "Brief v1 published · 2 conflicts resolved · US / UK cycling camera launch", domainRef: "brief-v1", createdAt: "2026-09-21T09:12:00+08:00" });
-      agent = { ...agent, messages: [...agent.messages, { id: "message-next-mix", runId: "run-brief-to-shortlist", role: "Agent", type: "NextAction", text: "Brief v1 is ready. Next I can build and compare two creator mix options.", payloadRef: "generate-mix", createdAt: "2026-09-21T09:12:30+08:00" }] };
+      const activeRun = agent.runs.find((run) => run.id === agent.activeRunId);
+      agent = activeRun?.scope === "BriefOnly"
+        ? { ...agent, runs: agent.runs.map((run) => run.id === activeRun.id ? { ...run, status: "Completed" as const, currentStepId: null, completedAt: "2026-09-21T09:12:30+08:00" } : run), messages: [...agent.messages, { id: "message-brief-scope-complete", runId: activeRun.id, role: "Agent", type: "Text", text: "Brief-only Run complete. Brief v1 is published; downstream planning was intentionally skipped.", payloadRef: "artifact-brief-v1", createdAt: "2026-09-21T09:12:30+08:00" }] }
+        : { ...agent, messages: [...agent.messages, { id: "message-next-mix", runId: "run-brief-to-shortlist", role: "Agent", type: "NextAction", text: "Brief v1 is ready. Next I can build and compare two creator mix options.", payloadRef: "generate-mix", createdAt: "2026-09-21T09:12:30+08:00" }] };
       return { ...state, brief: published, agent, activity: [...state.activity, activity("Brief v1 published")] };
     }
     case "RESOLVE_CONFLICT": return { ...state, brief: resolveConflict(state.brief, action.conflictId, action.resolution) };
