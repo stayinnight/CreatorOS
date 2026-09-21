@@ -16,7 +16,7 @@ const legacyActionIds: Record<string, RecommendedActionId> = {
   "publish-review": "preview-client",
 };
 
-export function AgentTimeline() {
+export function AgentTimeline({ onOpenArtifact = (artifactId) => undefined, openingArtifactId = null }: { onOpenArtifact?: (artifactId: string) => void; openingArtifactId?: string | null }) {
   const { state, dispatch } = useCampaign();
   const navigate = useNavigate();
   const recommendation = getRecommendedNextAction(state);
@@ -40,7 +40,7 @@ export function AgentTimeline() {
     if (message.type === "Artifact") {
       const artifact = state.agent.artifacts.find((item) => item.id === message.payloadRef);
       if (!artifact) return null;
-      return <ArtifactCard key={message.id} artifact={artifact} onOpen={() => dispatch({ type: "OPEN_ARTIFACT", artifactId: artifact.id })} />;
+      return <ArtifactCard key={message.id} artifact={artifact} onOpen={() => onOpenArtifact(artifact.id)} />;
     }
     if (message.type === "Exception") {
       const step = state.agent.steps.find((item) => item.id === message.payloadRef);
@@ -57,14 +57,15 @@ export function AgentTimeline() {
           : compareCurrent ? "Current" as const
             : compareComplete ? "Completed" as const : "Superseded" as const;
       const recommendedAction = recommendedId && recommendation?.id === recommendedId ? recommendation : null;
-      const onRecommended = recommendedAction ? () => executeRecommendedAction(recommendedAction, { dispatch, navigate, openArtifact: (artifactId) => dispatch({ type: "OPEN_ARTIFACT", artifactId }) }) : undefined;
+      const onRecommended = recommendedAction ? () => executeRecommendedAction(recommendedAction, { dispatch, navigate, openArtifact: onOpenArtifact }) : undefined;
       const onAction = recommendedAction ? onRecommended : message.payloadRef === "generate-mix" ? () => dispatch({ type: "GENERATE_MIX_OPTIONS" })
-        : message.payloadRef === "compare-mix" ? () => dispatch({ type: "OPEN_ARTIFACT", artifactId: "artifact-mix-draft" })
+        : message.payloadRef === "compare-mix" ? () => onOpenArtifact("artifact-mix-draft")
           : message.payloadRef === "prepare-review" ? () => dispatch({ type: "PREPARE_REVIEW" })
             : message.payloadRef === "publish-review" ? () => dispatch({ type: "PUBLISH_REVIEW" }) : undefined;
       const label = recommendedAction?.label ?? (message.payloadRef === "generate-mix" ? "Build mix options" : message.payloadRef === "compare-mix" ? "Open comparison" : message.payloadRef === "prepare-review" ? "Validate slate" : message.payloadRef === "publish-review" ? "Publish Round 1" : undefined);
       const previewHref = recommendedAction?.command.kind === "navigate" ? recommendedAction.command.to : message.payloadRef === "publish-review" ? `/campaigns/${state.id}/client-preview` : undefined;
-      return <NextActionCard key={message.id} message={message} lifecycle={lifecycle} onAction={onAction} actionLabel={label} previewHref={previewHref} />;
+      const targetArtifactId = recommendedAction?.command.kind === "open" ? recommendedAction.command.artifactId : message.payloadRef === "compare-mix" ? "artifact-mix-draft" : null;
+      return <NextActionCard key={message.id} message={message} lifecycle={lifecycle} onAction={onAction} actionLabel={label} previewHref={previewHref} busy={Boolean(targetArtifactId && openingArtifactId === targetArtifactId)} />;
     }
     if (message.type === "Progress") {
       const run = state.agent.runs.find((item) => item.id === state.agent.activeRunId);
