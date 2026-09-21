@@ -1,6 +1,6 @@
 import { campaignSeed } from "../data/seed";
 import { publishBrief, resolveConflict } from "../domain/brief";
-import { lockMatrix } from "../domain/matrix";
+import { evaluateMatrix, lockMatrix, summarizeMatrix } from "../domain/matrix";
 import type { CampaignState, MatrixRow } from "../domain/model";
 import { generateSearchPackages } from "../domain/search";
 import { qualifyCandidate } from "../domain/candidate";
@@ -32,7 +32,8 @@ export type CampaignAction =
   | { type: "CLOSE_ARTIFACT" }
   | { type: "SEND_AGENT_MESSAGE"; text: string; context?: { candidateId?: string } }
   | { type: "FAIL_AGENT_STEP"; stepId: string; error: string }
-  | { type: "RETRY_AGENT_STEP"; stepId: string };
+  | { type: "RETRY_AGENT_STEP"; stepId: string }
+  | { type: "GENERATE_MIX_OPTIONS" };
 
 function activity(message: string) {
   return { id: `activity-${message.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}`, at: "2026-09-21T10:00:00+08:00", kind: "Planning", message, status: "Success" as const };
@@ -45,6 +46,13 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
     case "START_AGENT_RUN": return { ...state, agent: startMaterialRun(state.agent) };
     case "OPEN_ARTIFACT": return { ...state, agent: selectArtifact(state.agent, action.artifactId) };
     case "CLOSE_ARTIFACT": return { ...state, agent: selectArtifact(state.agent, null) };
+    case "GENERATE_MIX_OPTIONS": return { ...state, agent: {
+      ...state.agent,
+      artifacts: [...state.agent.artifacts.filter((artifact) => artifact.id !== "artifact-mix-draft"), { id: "artifact-mix-draft", campaignId: state.id, kind: "Mix", version: 0, status: "Draft", sourceRunId: "run-brief-to-shortlist", sourceStepId: "step-mix", parentArtifactIds: ["artifact-brief-v1"], domainRef: state.activeScenarioId, summary: "Two creator mix options ready to compare", createdAt: "2026-09-21T09:20:00+08:00" }],
+      steps: state.agent.steps.map((step) => step.id === "step-mix" ? { ...step, status: "Running" as const, startedAt: "2026-09-21T09:13:00+08:00", summary: "Built two constraint-aware options" } : step),
+      runs: state.agent.runs.map((run) => run.id === state.agent.activeRunId ? { ...run, status: "WaitingForApproval" as const, currentStepId: "step-mix" } : run),
+      messages: [...state.agent.messages, { id: "message-compare-mix", runId: state.agent.activeRunId, role: "Agent", type: "NextAction", text: "I built two creator mix options. Compare the trade-offs, inspect the Matrix, then lock one direction.", payloadRef: "compare-mix", createdAt: "2026-09-21T09:20:00+08:00" }],
+    } };
     case "SEND_AGENT_MESSAGE": {
       const intent = parseAgentIntent(action.text, action.context);
       const suffix = state.agent.messages.length + 1;
@@ -113,13 +121,25 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
     }
     case "LOCK_MATRIX": {
       const target = state.matrixScenarios.find((scenario) => scenario.id === action.scenarioId)!;
+      const failures = evaluateMatrix(target.rows, state.brief).filter((item) => item.status === "fail");
+      if (failures.length) return { ...state, agent: { ...state.agent, messages: [...state.agent.messages, { id: `message-matrix-failure-${state.agent.messages.length}`, runId: state.agent.activeRunId, role: "Agent", type: "Exception", text: `Matrix cannot be locked: ${failures.map((item) => item.label).join(", ")}. Restore or edit the affected cells.`, payloadRef: "matrix-constraint-failure", createdAt: "2026-09-21T09:30:00+08:00" }] } };
       const locked = lockMatrix(target, state.brief);
-      return { ...state, matrixScenarios: state.matrixScenarios.map((scenario) => scenario.id === locked.id ? locked : scenario), activity: [...state.activity, activity(`${locked.name} Matrix v${locked.version} locked`)] };
+      const summary = summarizeMatrix(locked.rows);
+      let agent = { ...state.agent, artifacts: state.agent.artifacts.filter((artifact) => artifact.id !== "artifact-mix-draft") };
+      agent = registerArtifact(agent, { id: "artifact-mix-v1", campaignId: state.id, kind: "Mix", version: locked.version, status: "Locked", sourceRunId: "run-brief-to-shortlist", sourceStepId: "step-mix", parentArtifactIds: ["artifact-brief-v1"], domainRef: locked.id, summary: `Creator Mix v${locked.version} locked · $${Math.round(summary.totalCost / 1000)}K · ${(summary.totalExpectedViews / 1_000_000).toFixed(2)}M views · ${summary.longFormCreators} long-form creators`, createdAt: "2026-09-21T09:35:00+08:00" });
+      agent = { ...agent, selectedArtifactId: "artifact-mix-v1" };
+      return { ...state, agent, matrixScenarios: state.matrixScenarios.map((scenario) => scenario.id === locked.id ? locked : scenario), activity: [...state.activity, activity(`${locked.name} Matrix v${locked.version} locked`)] };
     }
     case "GENERATE_PACKAGES": {
       const target = state.matrixScenarios.find((scenario) => scenario.id === action.scenarioId)!;
       const packages = generateSearchPackages(target);
-      return { ...state, searchPackages: packages, activity: [...state.activity, activity(`${packages.length} search packages generated`)] };
+      let agent = registerArtifact(state.agent, { id: "artifact-search-packages-v1", campaignId: state.id, kind: "SearchPackageSet", version: 1, status: "Ready", sourceRunId: "run-brief-to-shortlist", sourceStepId: "step-mix", parentArtifactIds: ["artifact-mix-v1"], domainRef: "search-packages-v1", summary: `${packages.length} bounded search packages ready from locked Matrix`, createdAt: "2026-09-21T09:38:00+08:00" });
+      agent = { ...agent,
+        steps: agent.steps.map((step) => step.id === "step-mix" ? { ...step, status: "Succeeded" as const, completedAt: "2026-09-21T09:38:00+08:00" } : step.id === "step-source" ? { ...step, status: "Running" as const, startedAt: "2026-09-21T09:38:00+08:00" } : step),
+        runs: agent.runs.map((run) => run.id === agent.activeRunId ? { ...run, status: "Running" as const, currentStepId: "step-source" } : run),
+        messages: [...agent.messages, { id: "message-run-search-packages", runId: agent.activeRunId, role: "Agent", type: "RunGroup", text: `${packages.length} search packages generated from the locked Matrix`, payloadRef: agent.activeRunId, createdAt: "2026-09-21T09:38:30+08:00" }],
+      };
+      return { ...state, agent, searchPackages: packages, activity: [...state.activity, activity(`${packages.length} search packages generated`)] };
     }
     case "LOAD_BATCHES": return {
       ...state,

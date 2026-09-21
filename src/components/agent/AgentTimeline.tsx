@@ -32,7 +32,7 @@ export function AgentTimeline() {
       const step = state.agent.steps.find((item) => item.id === message.payloadRef);
       return <ExceptionCard key={message.id} message={message} step={step} onRetry={() => message.payloadRef && dispatch({ type: "RETRY_AGENT_STEP", stepId: message.payloadRef })} />;
     }
-    if (message.type === "NextAction") return <NextActionCard key={message.id} message={message} />;
+    if (message.type === "NextAction") return <NextActionCard key={message.id} message={message} onAction={message.payloadRef === "generate-mix" ? () => dispatch({ type: "GENERATE_MIX_OPTIONS" }) : message.payloadRef === "compare-mix" ? () => dispatch({ type: "OPEN_ARTIFACT", artifactId: "artifact-mix-draft" }) : undefined} />;
     return <div className={`chat-message ${message.role.toLowerCase()}`} key={message.id}>{message.text}</div>;
   })}</div>;
 }
