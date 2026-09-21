@@ -20,6 +20,8 @@ describe("monochrome editorial shell", () => {
     expect(tokens).toContain("--radius-control: 9px");
     expect(tokens).toContain("--radius-compact: 6px");
     expect(styles).toContain(".recommended-next-step");
+    expect(styles).toContain("height: 100vh; overflow: hidden");
+    expect(styles).toContain("overflow-y: auto; overscroll-behavior: contain");
     expect(motion).toContain(".artifact-inspector.is-opening");
     expect(motion).toContain("prefers-reduced-motion: reduce");
   });
