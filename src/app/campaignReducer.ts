@@ -12,6 +12,7 @@ import { answerCampaignFact } from "../agent/facts";
 import { continueFromBrief, reviseRunToBriefOnly } from "../agent/runRevision";
 import { buildCalibrationBatch, preferenceForReason } from "../agent/calibration";
 import { validateReviewRound } from "../domain/review";
+import { getRecommendedNextAction } from "../agent/recommendedAction";
 
 export type CampaignAction =
   | { type: "RESET" }
@@ -66,11 +67,34 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
       const resolution = resolveAgentIntent(action.text, { state, ...action.context });
       const intent = resolution.intent;
       const suffix = state.agent.messages.length + 1;
+      const userMessage = { id: `message-user-${suffix}`, runId: state.agent.activeRunId, role: "User" as const, type: "Text" as const, text: action.text, payloadRef: null, createdAt: "2026-09-21T09:15:00+08:00" };
+      const next = getRecommendedNextAction(state);
+      const nextPayloadRef = next ? `recommended:${next.id}` : null;
       if (intent.type === "ScopeRun") {
-        const withUser = { ...state.agent, messages: [...state.agent.messages, { id: `message-user-${suffix}`, runId: state.agent.activeRunId, role: "User" as const, type: "Text" as const, text: action.text, payloadRef: null, createdAt: "2026-09-21T09:15:00+08:00" }] };
+        const withUser = { ...state.agent, messages: [...state.agent.messages, userMessage] };
         return { ...state, agent: reviseRunToBriefOnly(withUser) };
       }
-      if (intent.type === "ContinuePlan") return { ...state, agent: continueFromBrief({ ...state.agent, messages: [...state.agent.messages, { id: `message-user-${suffix}`, runId: state.agent.activeRunId, role: "User", type: "Text", text: action.text, payloadRef: null, createdAt: "2026-09-21T09:20:00+08:00" }] }) };
+      if (intent.type === "ContinuePlan") return { ...state, agent: continueFromBrief({ ...state.agent, messages: [...state.agent.messages, { ...userMessage, createdAt: "2026-09-21T09:20:00+08:00" }] }) };
+      if (intent.type === "NextStep" && next) {
+        const alreadyShown = state.agent.messages.some((message) => message.type === "NextAction" && message.payloadRef === nextPayloadRef);
+        const messages = [...state.agent.messages, userMessage];
+        if (!alreadyShown) messages.push({ id: `message-agent-${suffix}`, runId: state.agent.activeRunId, role: "Agent", type: "NextAction", text: `${next.reason} ${next.outcome}`, payloadRef: nextPayloadRef, createdAt: "2026-09-21T09:15:01+08:00" });
+        return { ...state, agent: { ...state.agent, messages } };
+      }
+      if (intent.type === "Status") {
+        const run = state.agent.runs.find((item) => item.id === state.agent.activeRunId);
+        const runSteps = state.agent.steps.filter((item) => item.runId === run?.id && run?.stepIds.includes(item.id));
+        const completed = runSteps.filter((item) => item.status === "Succeeded" || item.status === "Skipped").length;
+        return { ...state, agent: { ...state.agent, messages: [...state.agent.messages, userMessage, {
+          id: `message-agent-${suffix}`,
+          runId: state.agent.activeRunId,
+          role: "Agent",
+          type: "Progress",
+          text: `${completed}/${runSteps.length} steps complete · ${next?.stage ?? "Run complete"}`,
+          payloadRef: nextPayloadRef,
+          createdAt: "2026-09-21T09:15:01+08:00",
+        }] } };
+      }
       const candidate = action.context?.candidateId ? state.candidates.find((item) => item.id === action.context!.candidateId) : undefined;
       const searchPackage = candidate ? state.searchPackages.find((item) => item.matrixCellId === candidate.matrixCellId) : undefined;
       const acknowledgement = intent.type === "ExplainCandidate"
@@ -83,12 +107,10 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
               : "请先从候选人卡片选择上下文，再查找相似人选。"
             : intent.type === "CampaignFact"
               ? answerCampaignFact(state, intent.query)?.body ?? "当前没有对应的 Campaign 数据。"
-              : intent.type === "Status"
-                ? `当前 Run 状态：${state.agent.runs.find((run) => run.id === state.agent.activeRunId)?.status ?? "尚未开始"}。${state.agent.decisions.some((item) => item.status === "Pending") ? "需要先完成当前 Brief 决策。" : "可以继续执行当前建议动作。"}`
-                : `我无法在当前阶段执行这条指令。你可以尝试：${resolution.suggestions.join(" / ")}。`;
+              : `我无法在当前阶段执行这条指令。你可以尝试：${resolution.suggestions.join(" / ")}。`;
       return { ...state, agent: { ...state.agent, messages: [
         ...state.agent.messages,
-        { id: `message-user-${suffix}`, runId: state.agent.activeRunId, role: "User", type: "Text", text: action.text, payloadRef: null, createdAt: "2026-09-21T09:15:00+08:00" },
+        userMessage,
         { id: `message-agent-${suffix}`, runId: state.agent.activeRunId, role: "Agent", type: "Text", text: acknowledgement, payloadRef: null, createdAt: "2026-09-21T09:15:01+08:00" },
       ] } };
     }

@@ -1,6 +1,6 @@
 export type AgentRunStatus = "Planned" | "Running" | "WaitingForDecision" | "WaitingForApproval" | "Failed" | "Completed";
 export type RunStepStatus = "Pending" | "Running" | "Waiting" | "Succeeded" | "Failed" | "Skipped";
-export type AgentMessageType = "Text" | "Plan" | "RunGroup" | "Decision" | "Artifact" | "Exception" | "NextAction";
+export type AgentMessageType = "Text" | "Plan" | "RunGroup" | "Decision" | "Artifact" | "Exception" | "NextAction" | "Progress";
 export type ArtifactKind = "Brief" | "Mix" | "SearchPackageSet" | "CandidateBatch" | "ReviewRound" | "GapAssessment";
 export type ArtifactStatus = "Draft" | "Ready" | "Locked" | "Published" | "Stale";
 

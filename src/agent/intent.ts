@@ -6,6 +6,7 @@ export type AgentIntent =
   | { type: "FindSimilar"; candidateId: string; preference: "Lifestyle" }
   | { type: "CampaignFact"; query: string }
   | { type: "Status" }
+  | { type: "NextStep" }
   | { type: "ContinuePlan" }
   | { type: "Unsupported"; suggestions: string[] };
 
@@ -23,6 +24,7 @@ export function resolveAgentIntent(input: string, context: { state: CampaignStat
   if (parsed.type !== "Unsupported") return { intent: parsed, confidence: "Exact" as const, requiredContext: parsed.type === "ExplainCandidate" || parsed.type === "FindSimilar" ? "Candidate" as const : "None" as const, available: true, suggestions: [] as string[] };
   const normalized = input.trim().toLowerCase();
   if (/预算|市场|目标|播放|证据|proof|budget|market|matrix|方案/.test(normalized)) return { intent: { type: "CampaignFact" as const, query: input }, confidence: "Alias" as const, requiredContext: "None" as const, available: true, suggestions: [] as string[] };
-  if (/进度|下一步|status/.test(normalized)) return { intent: { type: "Status" as const }, confidence: "Alias" as const, requiredContext: "None" as const, available: true, suggestions: [] as string[] };
+  if (/下一步|next step|what next/.test(normalized)) return { intent: { type: "NextStep" as const }, confidence: "Alias" as const, requiredContext: "None" as const, available: true, suggestions: [] as string[] };
+  if (/进度|status/.test(normalized)) return { intent: { type: "Status" as const }, confidence: "Alias" as const, requiredContext: "None" as const, available: true, suggestions: [] as string[] };
   return { intent: parsed, confidence: "Fallback" as const, requiredContext: "None" as const, available: false, suggestions: context.state.agent.activeRunId ? ["当前进度", "下一步做什么", "查看预算"] : ["分析 3 份材料", "先只整理 Brief"] };
 }
