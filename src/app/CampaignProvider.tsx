@@ -1,5 +1,6 @@
-import { createContext, useContext, useMemo, useReducer, type Dispatch, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useReducer, type Dispatch, type ReactNode } from "react";
 import { campaignSeed } from "../data/seed";
+import { loadState, saveState } from "../data/persistence";
 import type { CampaignState } from "../domain/model";
 import { campaignReducer, type CampaignAction } from "./campaignReducer";
 
@@ -7,7 +8,8 @@ interface CampaignContextValue { state: CampaignState; dispatch: Dispatch<Campai
 const CampaignContext = createContext<CampaignContextValue | null>(null);
 
 export function CampaignProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(campaignReducer, campaignSeed, structuredClone);
+  const [state, dispatch] = useReducer(campaignReducer, campaignSeed, () => loadState() ?? structuredClone(campaignSeed));
+  useEffect(() => saveState(state), [state]);
   const value = useMemo(() => ({ state, dispatch }), [state]);
   return <CampaignContext.Provider value={value}>{children}</CampaignContext.Provider>;
 }

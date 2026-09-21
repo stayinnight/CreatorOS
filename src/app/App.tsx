@@ -4,6 +4,9 @@ import { CampaignProvider } from "./CampaignProvider";
 import { MixPlannerPage } from "../pages/MixPlannerPage";
 import { SearchCandidatesPage } from "../pages/SearchCandidatesPage";
 import { ClientReviewPage } from "../pages/ClientReviewPage";
+import { OverviewPage } from "../pages/OverviewPage";
+import { ActivityPage } from "../pages/ActivityPage";
+import { resetState } from "../data/persistence";
 import { useCampaign } from "./CampaignProvider";
 
 const navigation = [
@@ -55,16 +58,16 @@ function Workspace() {
           <div className="header-meta">
             <span><small>Deadline</small>8 weeks</span>
             <span><small>Budget</small>$180K</span>
-            <button type="button" className="ghost-button" onClick={() => dispatch({ type: "RESET" })}>Reset demo</button>
+            <button type="button" className="ghost-button" onClick={() => { if (window.confirm("Reset the complete demo to its deterministic starting state?")) { resetState(); dispatch({ type: "RESET" }); } }}>Reset demo</button>
           </div>
         </header>
         <Routes>
-          <Route path="/" element={<Placeholder title="Overview" />} />
+          <Route path="/" element={<OverviewPage />} />
           <Route path="/brief" element={<BriefPage />} />
           <Route path="/mix-planner" element={<MixPlannerPage />} />
           <Route path="/search-candidates" element={<SearchCandidatesPage />} />
           <Route path="/client-review" element={<ClientReviewPage />} />
-          <Route path="/activity" element={<Placeholder title="Activity" />} />
+          <Route path="/activity" element={<ActivityPage />} />
         </Routes>
       </main>
     </div>
