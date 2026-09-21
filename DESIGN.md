@@ -85,6 +85,15 @@ Artifact 是 Agent 的工作产物，不是一级导航。点击 Artifact 时 Ag
 
 Runs 页面保留执行历史、局部失败和恢复轨迹，避免对话结束后无法解释系统做过什么。
 
+### 5.3 日常工作环境与状态一致性
+
+生产环境中，CreatorOS 内部系统是 Campaign、Run、Artifact、Decision 和 Review 状态的唯一事实源。飞书和 Gmail 不各自维护一套业务状态，避免同一任务在多个系统中出现相互冲突的进度。
+
+- 当 Run 进入等待人工决策、客户反馈已到达或执行失败等状态时，飞书只发送待办摘要和指向对应 Campaign / Run / Artifact 的深链；业务人员回到内部系统查看证据并完成正式操作。
+- Gmail 承载客户邀请、报价和正式外部回复。邮件进入系统后先记录 Gmail Thread Reference 和原始消息 ID，再形成待确认的 Quote 或 Client Feedback；只有经过确定性校验与人工确认，才改变正式 Campaign 状态。
+- 通知和外部消息均携带 Campaign ID、Run ID、Artifact / Version ID；外部消息按原始消息 ID 幂等接收，发送失败可以重试，但不会回滚已经成功的领域状态。
+- 当前本地 Demo 仅用 Inbox、Runs 和引用字段表达这条链路；飞书通知、Gmail 收发、客户访问和跨系统同步全部为 Mock，不产生外部副作用。
+
 ## 6. 端到端运行链路
 
 ### 6.1 材料分析与 Brief
