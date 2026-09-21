@@ -13,7 +13,8 @@ export type CampaignAction =
   | { type: "SIMULATE_LONG_FORM_GAP"; scenarioId: string }
   | { type: "RESTORE_SCENARIO"; scenarioId: string }
   | { type: "LOCK_MATRIX"; scenarioId: string }
-  | { type: "GENERATE_PACKAGES"; scenarioId: string };
+  | { type: "GENERATE_PACKAGES"; scenarioId: string }
+  | { type: "LOAD_BATCHES" };
 
 function activity(message: string) {
   return { id: `activity-${message.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}`, at: "2026-09-21T10:00:00+08:00", kind: "Planning", message, status: "Success" as const };
@@ -51,5 +52,11 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
       const packages = generateSearchPackages(target);
       return { ...state, searchPackages: packages, activity: [...state.activity, activity(`${packages.length} search packages generated`)] };
     }
+    case "LOAD_BATCHES": return {
+      ...state,
+      candidatesLoaded: true,
+      batches: state.batches.map((batch) => ({ ...batch, packageIds: state.searchPackages.map((item) => item.id) })),
+      activity: [...state.activity, activity("2 candidate batches loaded · 42 profiles evaluated")],
+    };
   }
 }
