@@ -1,11 +1,9 @@
-import { useState } from "react";
-import { campaignSeed } from "../data/seed";
-import { publishBrief, resolveConflict } from "../domain/brief";
+import { useCampaign } from "../app/CampaignProvider";
 import type { BriefConflict, BriefVersion } from "../domain/model";
 
 const sourceTone: Record<string, string> = { Email: "blue", Excel: "green", "Meeting Notes": "amber" };
 
-function ConflictCard({ conflict, brief, onChange }: { conflict: BriefConflict; brief: BriefVersion; onChange: (brief: BriefVersion) => void }) {
+function ConflictCard({ conflict, brief, onResolve }: { conflict: BriefConflict; brief: BriefVersion; onResolve: (conflictId: string, resolution: string) => void }) {
   return (
     <article className={`conflict-card ${conflict.status === "Resolved" ? "resolved" : ""}`}>
       <div className="conflict-heading">
@@ -21,7 +19,7 @@ function ConflictCard({ conflict, brief, onChange }: { conflict: BriefConflict; 
               value={option}
               checked={conflict.resolution === option}
               disabled={brief.status === "Published"}
-              onChange={() => onChange(resolveConflict(brief, conflict.id, option))}
+              onChange={() => onResolve(conflict.id, option)}
             />
             <span>{option}</span>
           </label>
@@ -33,7 +31,8 @@ function ConflictCard({ conflict, brief, onChange }: { conflict: BriefConflict; 
 }
 
 export function BriefPage() {
-  const [brief, setBrief] = useState<BriefVersion>(() => structuredClone(campaignSeed.brief));
+  const { state, dispatch } = useCampaign();
+  const brief = state.brief;
   const unresolved = brief.conflicts.filter((item) => item.status === "Unresolved").length;
 
   return (
@@ -58,7 +57,7 @@ export function BriefPage() {
 
           <div className="section-heading spacing-top"><div><span className="micro-label">CONFLICT REGISTER</span><h3>Two decisions gate the plan</h3></div><span>{unresolved} open</span></div>
           <div className="conflict-grid">
-            {brief.conflicts.map((conflict) => <ConflictCard key={conflict.id} conflict={conflict} brief={brief} onChange={setBrief} />)}
+            {brief.conflicts.map((conflict) => <ConflictCard key={conflict.id} conflict={conflict} brief={brief} onResolve={(conflictId, resolution) => dispatch({ type: "RESOLVE_CONFLICT", conflictId, resolution })} />)}
           </div>
         </div>
 
@@ -81,7 +80,7 @@ export function BriefPage() {
             className="primary-button"
             type="button"
             disabled={unresolved > 0 || brief.status === "Published"}
-            onClick={() => setBrief(publishBrief(brief))}
+            onClick={() => dispatch({ type: "PUBLISH_BRIEF" })}
           >
             {brief.status === "Published" ? "Brief v1 published" : `Publish Brief v1${unresolved ? ` · ${unresolved} blocked` : ""}`}
           </button>
