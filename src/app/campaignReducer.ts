@@ -3,6 +3,9 @@ import { publishBrief, resolveConflict } from "../domain/brief";
 import { lockMatrix } from "../domain/matrix";
 import type { CampaignState, MatrixRow } from "../domain/model";
 import { generateSearchPackages } from "../domain/search";
+import { qualifyCandidate } from "../domain/candidate";
+import { assessGap } from "../domain/gap";
+import type { CandidateDecision } from "../domain/model";
 
 export type CampaignAction =
   | { type: "RESET" }
@@ -14,7 +17,12 @@ export type CampaignAction =
   | { type: "RESTORE_SCENARIO"; scenarioId: string }
   | { type: "LOCK_MATRIX"; scenarioId: string }
   | { type: "GENERATE_PACKAGES"; scenarioId: string }
-  | { type: "LOAD_BATCHES" };
+  | { type: "LOAD_BATCHES" }
+  | { type: "PUBLISH_REVIEW" }
+  | { type: "SET_CLIENT_DECISION"; candidateId: string; decision: CandidateDecision; reason?: string; comment?: string }
+  | { type: "SUBMIT_DECISIONS"; decisions: Record<string, CandidateDecision> }
+  | { type: "PROMOTE_BACKUP"; candidateId: string }
+  | { type: "CREATE_REPLENISHMENT"; packageId: string };
 
 function activity(message: string) {
   return { id: `activity-${message.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}`, at: "2026-09-21T10:00:00+08:00", kind: "Planning", message, status: "Success" as const };
@@ -58,5 +66,60 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
       batches: state.batches.map((batch) => ({ ...batch, packageIds: state.searchPackages.map((item) => item.id) })),
       activity: [...state.activity, activity("2 candidate batches loaded · 42 profiles evaluated")],
     };
+    case "PUBLISH_REVIEW": {
+      const packageByCell = new Map(state.searchPackages.map((item) => [item.matrixCellId, item]));
+      const eligiblePrimaries = state.candidates.filter((candidate) => {
+        const searchPackage = packageByCell.get(candidate.matrixCellId);
+        return candidate.role === "Primary" && searchPackage && qualifyCandidate(candidate, searchPackage).status === "Qualified";
+      });
+      if (!state.candidatesLoaded || eligiblePrimaries.length !== state.brief.firstReviewCount) return state;
+      return {
+        ...state,
+        reviewRound: { id: "review-round-01", status: "Published", candidateIds: eligiblePrimaries.map((item) => item.id), publishedAt: "2026-09-21T11:00:00+08:00", submittedAt: null },
+        activity: [...state.activity, activity("Client Review Round 1 published · 30 creators")],
+      };
+    }
+    case "SET_CLIENT_DECISION": return {
+      ...state,
+      candidates: state.candidates.map((candidate) => candidate.id === action.candidateId ? { ...candidate, decision: action.decision, clientReason: action.reason ?? candidate.clientReason, clientComment: action.comment ?? candidate.clientComment } : candidate),
+    };
+    case "SUBMIT_DECISIONS": {
+      if (!state.reviewRound) return state;
+      const candidates = state.candidates.map((candidate) => action.decisions[candidate.id] ? {
+        ...candidate,
+        decision: action.decisions[candidate.id],
+        clientReason: action.decisions[candidate.id] === "Pass" ? "Scenario fit" : candidate.clientReason,
+      } : candidate);
+      const reviewed = candidates.filter((candidate) => state.reviewRound!.candidateIds.includes(candidate.id));
+      const backups = candidates.filter((candidate) => candidate.role === "Backup");
+      const matrix = state.matrixScenarios.find((scenario) => scenario.id === state.activeScenarioId)!;
+      return {
+        ...state,
+        candidates,
+        reviewRound: { ...state.reviewRound, status: "Submitted", submittedAt: "2026-09-21T11:30:00+08:00" },
+        gapAssessment: assessGap(matrix, reviewed, backups),
+        activity: [...state.activity, activity("Client decisions submitted · coverage gap detected")],
+      };
+    }
+    case "PROMOTE_BACKUP": {
+      if (!state.gapAssessment) return state;
+      const promoted = state.candidates.find((candidate) => candidate.id === action.candidateId);
+      if (!promoted) return state;
+      const candidates = state.candidates.map((candidate) => candidate.id === action.candidateId ? { ...candidate, role: "Primary" as const, decision: "Select" as const } : candidate);
+      const remainingCells = state.gapAssessment.missingCells.flatMap((cell) => cell.matrixCellId !== promoted.matrixCellId ? [cell] : cell.missingCreators > 1 ? [{ ...cell, missingCreators: cell.missingCreators - 1 }] : []);
+      const nextCell = remainingCells[0];
+      return {
+        ...state,
+        candidates,
+        gapAssessment: { ...state.gapAssessment, missingCells: remainingCells, recommendedAction: remainingCells.length ? "Replenish" : "Replenish", packageId: nextCell ? `pkg-${nextCell.matrixCellId}` : state.gapAssessment.packageId, backupCandidateId: null },
+        activity: [...state.activity, activity(`${promoted.creatorName} promoted from backup`) ],
+      };
+    }
+    case "CREATE_REPLENISHMENT": {
+      const parent = state.searchPackages.find((item) => item.id === action.packageId);
+      if (!parent) return state;
+      const replenishment = { ...parent, id: `${parent.id}-replenishment-01`, status: "Ready" as const, parentPackageId: parent.id, dueAt: "2026-10-01" };
+      return { ...state, searchPackages: [...state.searchPackages, replenishment], activity: [...state.activity, activity(`Replenishment package created · ${parent.market} ${parent.ridingScenario}`)] };
+    }
   }
 }

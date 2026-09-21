@@ -3,6 +3,7 @@ import { BriefPage } from "../pages/BriefPage";
 import { CampaignProvider } from "./CampaignProvider";
 import { MixPlannerPage } from "../pages/MixPlannerPage";
 import { SearchCandidatesPage } from "../pages/SearchCandidatesPage";
+import { ClientReviewPage } from "../pages/ClientReviewPage";
 import { useCampaign } from "./CampaignProvider";
 
 const navigation = [
@@ -62,7 +63,7 @@ function Workspace() {
           <Route path="/brief" element={<BriefPage />} />
           <Route path="/mix-planner" element={<MixPlannerPage />} />
           <Route path="/search-candidates" element={<SearchCandidatesPage />} />
-          <Route path="/client-review" element={<Placeholder title="Client Review" />} />
+          <Route path="/client-review" element={<ClientReviewPage />} />
           <Route path="/activity" element={<Placeholder title="Activity" />} />
         </Routes>
       </main>
