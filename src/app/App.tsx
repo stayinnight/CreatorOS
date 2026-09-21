@@ -1,4 +1,5 @@
 import { NavLink, Route, Routes } from "react-router-dom";
+import { BriefPage } from "../pages/BriefPage";
 
 const navigation = [
   { label: "Overview", path: "/" },
@@ -53,7 +54,7 @@ export function App() {
         </header>
         <Routes>
           <Route path="/" element={<Placeholder title="Overview" />} />
-          <Route path="/brief" element={<Placeholder title="Brief" />} />
+          <Route path="/brief" element={<BriefPage />} />
           <Route path="/mix-planner" element={<Placeholder title="Mix Planner" />} />
           <Route path="/search-candidates" element={<Placeholder title="Search & Candidates" />} />
           <Route path="/client-review" element={<Placeholder title="Client Review" />} />
