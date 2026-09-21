@@ -4,14 +4,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CampaignAction } from "../app/campaignReducer";
 import { useArtifactTransition } from "../components/agent/useArtifactTransition";
 
-function Harness({ dispatch }: { dispatch: (action: CampaignAction) => void }) {
-  const [selected, setSelected] = useState<string | null>(null);
+function Harness({ dispatch, initialSelected = null }: { dispatch: (action: CampaignAction) => void; initialSelected?: string | null }) {
+  const [selected, setSelected] = useState<string | null>(initialSelected);
   const transition = useArtifactTransition(selected, (action) => {
     dispatch(action);
     if (action.type === "OPEN_ARTIFACT") setSelected(action.artifactId);
     if (action.type === "CLOSE_ARTIFACT") setSelected(null);
   });
-  return <button type="button" aria-busy={Boolean(transition.openingArtifactId)} onClick={() => transition.openArtifact("artifact-mix-draft")}>{transition.openingArtifactId ? "Opening comparison…" : "Open comparison"}</button>;
+  return <button type="button" data-reveal-key={transition.revealKey} aria-busy={Boolean(transition.openingArtifactId)} onClick={() => transition.openArtifact("artifact-mix-draft")}>{transition.openingArtifactId ? "Opening comparison…" : "Open comparison"}</button>;
 }
 
 describe("artifact transition", () => {
@@ -54,5 +54,16 @@ describe("artifact transition", () => {
     act(() => root.render(<Harness dispatch={dispatch} />));
     act(() => container.querySelector("button")!.click());
     expect(dispatch).toHaveBeenCalledTimes(1);
+  });
+
+  it("reveals an artifact again when the requested result is already open", () => {
+    const dispatch = vi.fn();
+    window.matchMedia = vi.fn().mockReturnValue({ matches: false });
+    act(() => root.render(<Harness dispatch={dispatch} initialSelected="artifact-mix-draft" />));
+
+    act(() => container.querySelector("button")!.click());
+
+    expect(container.querySelector("button")!.dataset.revealKey).toBe("1");
+    expect(dispatch).not.toHaveBeenCalled();
   });
 });

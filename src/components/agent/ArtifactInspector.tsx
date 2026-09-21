@@ -18,14 +18,28 @@ import type { ArtifactTransitionPhase } from "./useArtifactTransition";
 
 const money = (value: number) => `$${Math.round(value / 1000)}K`;
 
-export function ArtifactInspector({ artifact, phase, onClose, onOpenArtifact }: { artifact: CampaignArtifact; phase: ArtifactTransitionPhase; onClose: () => void; onOpenArtifact: (artifactId: string) => void }) {
+export function ArtifactInspector({ artifact, phase, revealKey, onClose, onOpenArtifact }: { artifact: CampaignArtifact; phase: ArtifactTransitionPhase; revealKey: number; onClose: () => void; onOpenArtifact: (artifactId: string) => void }) {
   const { state, dispatch } = useCampaign();
   const navigate = useNavigate();
+  const inspectorRef = useRef<HTMLElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const next = getRecommendedNextAction(state);
   useEffect(() => { if (phase === "ready") headingRef.current?.focus({ preventScroll: true }); }, [artifact.id, phase]);
+  useEffect(() => {
+    if (!revealKey) return;
+    const inspector = inspectorRef.current;
+    if (!inspector) return;
+    const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    inspector.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
+    headingRef.current?.focus({ preventScroll: true });
+    if (!reduced) inspector.animate?.([
+      { boxShadow: "-10px 0 32px rgba(10, 10, 10, .06)" },
+      { boxShadow: "-16px 0 44px rgba(10, 10, 10, .20)" },
+      { boxShadow: "-10px 0 32px rgba(10, 10, 10, .06)" },
+    ], { duration: 420, easing: "ease-out" });
+  }, [revealKey]);
   const execute = () => next && executeRecommendedAction(next, { dispatch, navigate, openArtifact: onOpenArtifact });
-  return <aside className={`artifact-inspector is-${phase}`} aria-label={`${artifact.kind} inspector`}><header className="inspector-head"><div><span>{artifact.kind.toUpperCase()} · VERSION {artifact.version}</span><h2 ref={headingRef} tabIndex={-1}>{artifact.summary}</h2></div><button type="button" aria-label="Close artifact" onClick={onClose}>×</button></header>{next && <RecommendedNextStep action={next} onExecute={execute} />}<div className="inspector-content" key={artifact.id}>{artifact.kind === "Brief" ? <BriefArtifactDetail /> : artifact.kind === "Mix" ? <MixArtifactDetail scenarioId={artifact.domainRef} /> : artifact.kind === "SearchPackageSet" ? <SearchPackageSetDetail /> : artifact.kind === "CandidateBatch" ? <CandidateBatchDetail artifact={artifact} /> : artifact.kind === "ReviewRound" ? <ReviewRoundDetail /> : artifact.kind === "GapAssessment" ? <GapArtifactDetail /> : <div className="inspector-placeholder"><strong>{artifact.kind} detail</strong></div>}</div></aside>;
+  return <aside ref={inspectorRef} className={`artifact-inspector is-${phase}`} aria-label={`${artifact.kind} inspector`}><header className="inspector-head"><div><span>{artifact.kind.toUpperCase()} · VERSION {artifact.version}</span><h2 ref={headingRef} tabIndex={-1}>{artifact.summary}</h2></div><button type="button" aria-label="Close artifact" onClick={onClose}>×</button></header>{next && <RecommendedNextStep action={next} onExecute={execute} />}<div className="inspector-content" key={artifact.id}>{artifact.kind === "Brief" ? <BriefArtifactDetail /> : artifact.kind === "Mix" ? <MixArtifactDetail scenarioId={artifact.domainRef} /> : artifact.kind === "SearchPackageSet" ? <SearchPackageSetDetail /> : artifact.kind === "CandidateBatch" ? <CandidateBatchDetail artifact={artifact} /> : artifact.kind === "ReviewRound" ? <ReviewRoundDetail /> : artifact.kind === "GapAssessment" ? <GapArtifactDetail /> : <div className="inspector-placeholder"><strong>{artifact.kind} detail</strong></div>}</div></aside>;
 }
 
 function BriefArtifactDetail() {

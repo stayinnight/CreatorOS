@@ -21,6 +21,6 @@ export function CampaignDeskPage() {
       <section ref={chatScroll.viewportRef} onScroll={chatScroll.onScroll} className="timeline-region" aria-label="Agent timeline"><div ref={chatScroll.contentRef}><AgentTimeline onOpenArtifact={transition.openArtifact} openingArtifactId={transition.openingArtifactId} /></div></section>
       <AgentComposer />
     </main>
-    {artifact ? <ArtifactInspector artifact={artifact} phase={transition.phase} onClose={transition.closeArtifact} onOpenArtifact={transition.openArtifact} /> : transition.openingArtifactId ? <aside className="artifact-inspector is-opening" aria-label="Opening artifact" aria-busy="true"><div className="inspector-skeleton"><i /><i /><i /><i /></div></aside> : <ContextRail />}
+    {artifact ? <ArtifactInspector artifact={artifact} phase={transition.phase} revealKey={transition.revealKey} onClose={transition.closeArtifact} onOpenArtifact={transition.openArtifact} /> : transition.openingArtifactId ? <aside className="artifact-inspector is-opening" aria-label="Opening artifact" aria-busy="true"><div className="inspector-skeleton"><i /><i /><i /><i /></div></aside> : <ContextRail />}
   </div>;
 }

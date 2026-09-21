@@ -10,6 +10,7 @@ function prefersReducedMotion() {
 export function useArtifactTransition(selectedArtifactId: string | null, dispatch: Dispatch<CampaignAction>) {
   const [openingArtifactId, setOpeningArtifactId] = useState<string | null>(null);
   const [phase, setPhase] = useState<ArtifactTransitionPhase>(selectedArtifactId ? "ready" : "idle");
+  const [revealKey, setRevealKey] = useState(0);
   const timerRef = useRef<number | null>(null);
   const pendingRef = useRef<string | null>(null);
 
@@ -19,7 +20,11 @@ export function useArtifactTransition(selectedArtifactId: string | null, dispatc
   }, []);
 
   const openArtifact = useCallback((artifactId: string) => {
-    if (pendingRef.current || artifactId === selectedArtifactId) return;
+    if (pendingRef.current) return;
+    if (artifactId === selectedArtifactId) {
+      setRevealKey((value) => value + 1);
+      return;
+    }
     pendingRef.current = artifactId;
     setOpeningArtifactId(artifactId);
     setPhase("opening");
@@ -52,5 +57,5 @@ export function useArtifactTransition(selectedArtifactId: string | null, dispatc
 
   useEffect(() => () => clearTimer(), [clearTimer]);
 
-  return { openArtifact, closeArtifact, openingArtifactId, phase };
+  return { openArtifact, closeArtifact, openingArtifactId, phase, revealKey };
 }
