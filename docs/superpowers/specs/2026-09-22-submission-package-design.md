@@ -84,4 +84,3 @@ The documentation pass is complete when:
 5. `npm test` passes all tests and `npm run build` succeeds in the isolated worktree.
 6. The repository contains no `TBD`, `TODO`, or fabricated personal-experience statement in evaluator-facing documents.
 7. The changes are committed on the isolated branch and integrated only after verification.
-

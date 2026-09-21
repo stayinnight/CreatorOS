@@ -190,4 +190,3 @@ Expected: no uncommitted changes and documentation commits are present.
 - [ ] **Step 4: Integrate only after verification**
 
 Use the project's approved local integration workflow to bring the verified documentation commits onto `master`, then rerun `npm test` and `npm run build` on `master` before reporting completion.
-
