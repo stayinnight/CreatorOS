@@ -6,7 +6,7 @@
 
 **Architecture:** Build a React/TypeScript/Vite single-page app around pure TypeScript domain functions and one small React state provider persisted to localStorage. Use fixed, validated seed data for the single campaign; keep Feishu and Gmail as explicit simulated activity records. No backend, auth, model, scraper, workflow engine, or generic importer is introduced.
 
-**Tech Stack:** Node 20+, React 19.3, TypeScript 7, Vite 8, React Router 7, Zod 4, Vitest 5, jsdom 30, CSS modules or one focused global stylesheet.
+**Implemented Tech Stack:** Node 18.18+, React 19.3, TypeScript 5.7, Vite 5.4, React Router 6.30, Zod 4, Vitest 2.1, jsdom 24, and one focused global stylesheet. These pinned versions preserve Node 18 compatibility in the provided environment.
 
 ## Global Constraints
 
@@ -126,17 +126,17 @@ creator-mix-planner/
   "dependencies": {
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "react-router-dom": "7.18.4",
+    "react-router-dom": "6.30.1",
     "zod": "4.6.5"
   },
   "devDependencies": {
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "6.1.1",
-    "jsdom": "30.1.0",
-    "typescript": "7.0.2",
-    "vite": "8.3.0",
-    "vitest": "5.0.1"
+    "@vitejs/plugin-react": "4.3.4",
+    "jsdom": "24.1.3",
+    "typescript": "5.7.3",
+    "vite": "5.4.21",
+    "vitest": "2.1.9"
   }
 }
 ```

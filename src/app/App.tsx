@@ -18,16 +18,6 @@ const navigation = [
   { label: "Activity", path: "/activity" },
 ];
 
-function Placeholder({ title }: { title: string }) {
-  return (
-    <section className="empty-stage">
-      <span className="stage-index">WORKSPACE</span>
-      <h2>{title}</h2>
-      <p>The campaign workspace is being assembled around the approved cycling-camera brief.</p>
-    </section>
-  );
-}
-
 function Workspace() {
   const { state, dispatch } = useCampaign();
   return (

@@ -1,0 +1,37 @@
+{
+  "id": "pkg-us-road-youtube",
+  "campaignId": "campaign-cycling-camera",
+  "briefVersionId": "brief-v1",
+  "matrixVersionId": "scenario-a",
+  "matrixCellId": "us-road-youtube",
+  "market": "US",
+  "platform": "YouTube",
+  "ridingScenario": "Road",
+  "creatorTier": "Mid",
+  "contentFormat": "Long Review",
+  "targetCreatorCount": 2,
+  "candidateTargetCount": 6,
+  "backupTargetCount": 4,
+  "budgetCeilingPerCreator": 32000,
+  "expectedViewsFloor": 500000,
+  "rightsRequirements": "90-day paid usage · US + UK · included in total budget",
+  "mustHaveRules": [
+    "Verified real cycling content",
+    "Road scenario evidence",
+    "YouTube format fit"
+  ],
+  "exclusionRules": [
+    "Motorcycle-only or skiing-only content",
+    "Unverifiable or copied content",
+    "Blocking brand-safety risk"
+  ],
+  "evidenceRequirements": [
+    "Source URL",
+    "Recent relevant views",
+    "Camera proof-point timestamps"
+  ],
+  "owner": "Maya Chen",
+  "dueAt": "2026-09-28",
+  "status": "Ready",
+  "parentPackageId": null
+}
