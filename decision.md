@@ -1,43 +1,127 @@
-# Product and engineering decisions
+# 产品与工程决策记录
 
-## Chosen product shape
+## 产品形态选择
 
-This is a campaign workspace, not a generic CRM or an AI chat surface. The navigation mirrors the actual decision loop: Overview → Brief → Mix Planner → Search & Candidates → Client Review → Activity. The head-mounted cycling camera stays visible in the proof requirements, Matrix cells, candidate evidence, and client recovery flow.
+本项目选择的是**活动智能体工作台**，不是通用客户关系管理系统、独立聊天机器人，也不是把需求简报、组合矩阵、候选人和客户评审平铺成多个功能页签。
 
-The Matrix receives the deepest implementation because it makes downstream quality measurable. Every row binds market, platform, riding scenario, format, creator count, unit economics, expected relevant views, rights cost, and a search multiplier. Derived totals and blocking constraints are computed rather than presented as static mock values.
+全局入口只保留收件箱、活动列表和运行记录。用户进入活动后，在同一条智能体时间线中完成材料分析、冲突确认、方案比较、候选校准、客户发布和反馈修复；需求简报、创作者组合、搜索任务包、候选批次、客户评审轮次与缺口评估作为版本化产物在右侧检查器中打开。这样既保留日常聊天式交互，也让每次业务判断有可追踪的结构化产物。
 
-## Deliberate assumptions
+骑行头戴摄像头不是可替换的示例名称，而是贯穿证明要求、矩阵单元格、候选证据、资格门禁和客户反馈修复的业务背景。系统重点检查真实自行车骑行、第一视角、防抖、复杂光线、安全记录和免手持安装等证据。
 
-- The $180,000 cap includes rights.
-- “High-quality long-form” is represented by native YouTube long reviews and verified real-cycling proof.
-- Brief conflicts are resolved to an eight-week launch, while motorcycle and skiing remain outside the current scope.
-- Scenario A is the walkthrough path; Scenario B proves comparison without creating a generic scenario builder.
-- Round 1 contains exactly 30 qualified primaries and retains 10 qualified backups internally.
-- Select and Maybe count toward forecast coverage; Pass does not.
-- Backup promotion is preferred over replenishment because it preserves the approved brief and locked plan.
+## 工程重点选择
 
-## AI use and control boundary
+组合矩阵是第一条做深的关键路径，因为它能把需求简报转成可计算、可校验、可继续执行的计划。每一行同时绑定市场、平台、骑行场景、内容形式、创作者数量、单人成本、内容使用权成本、预计有效播放和搜索倍数；总预算、总播放、综合千次播放成本与所有硬约束均由领域函数计算，不使用静态模拟数字。
 
-AI assisted requirement decomposition, formula/test drafting, UI exploration, and documentation. Runtime behavior does not depend on an AI model. Brief publication, formulas, qualification, field projection, and gap decisions are deterministic and covered by tests.
+证据资格校准是第二个重点模块。系统先执行资格硬门禁，再对合格候选排序；每个结论都引用具体规则和证据，避免只给黑箱总分。候选校准后的反馈只形成当前活动的软偏好，不得改写已锁定的需求简报或组合矩阵。
 
-The implementation intentionally rejects:
+其余链路使用固定种子数据轻量串通，但页面操作会真实改变状态、结构化产物和下游结果，不是无效按钮或单纯展示。
 
-- AI as final creator selector;
-- opaque composite scores;
-- runtime extraction pretending to be reliable without a model or source system;
-- a generalized rules engine, command bus, event store, or connector framework;
-- silent mutation of the locked Matrix after client feedback.
+## 明确采用的业务假设
 
-The ranking formula is visible and fixed: relevance 35%, production 20%, performance stability 20%, commercial fit 15%, and audience fit 10%. Blocking evidence rules always outrank that score.
+- `$180,000` 总预算包含内容使用权费用。
+- “高质量长视频”用 `YouTube` 原生长视频、真实骑行证据和头戴摄像头证明点共同表达。
+- 需求简报冲突在演示路径中解决为 8 周上线；摩托车与滑雪仍为待确认范围，不进入当前计划。
+- 方案 A 用于完整演示；方案 B 用于证明方案比较，不建设通用场景生成器。
+- 第一轮恰好包含 30 名合格主选，另保留 10 名合格备选仅供内部使用。
+- 客户的“选择”和“待定”计入预测覆盖，“淘汰”不计入。
+- 同一矩阵单元格存在合格备选时，优先提升备选；仍有缺口时再生成局部补池任务包。
+- 重规划矩阵与修订需求简报在本次演示中提供明确判定和版本关系，但不实现通用编辑器。
 
-## Bad case used for proof
+这些是为了让题目中的模糊要求可计算、可演示而做出的显式假设，不冒充客户已经确认的事实。
 
-`creator-moto-only` / **Torque Atlas** has strong POV reach but only motorcycle evidence. `qualifyCandidate` disqualifies it with `No verified real-cycling evidence`; `src/tests/candidate.test.ts` locks this behavior. `creator-missing-evidence` is routed to Needs Review rather than being guessed into qualification.
+## 人工智能的使用方式
 
-## Privacy boundary
+人工智能用于：
 
-`toClientCandidate` creates a new allow-listed object. It never clones an internal object and deletes fields afterward. Historical pricing, internal notes, score detail, Gmail thread IDs, payment terms, and primary/backup strategy therefore cannot cross the client projection. `src/tests/projection.test.ts` asserts the boundary.
+- 拆解题目和业务约束；
+- 比较产品形态与实现范围；
+- 草拟公式、测试用例和验收脚本；
+- 探索智能体工作台、结构化产物检查器与交互动效；
+- 整理文档和检查覆盖缺口。
 
-## Production follow-ons
+运行时演示不依赖在线人工智能模型。需求简报发布、组合矩阵公式、候选资格、客户字段投影、缺口判断和状态迁移均由确定性 `TypeScript` 逻辑执行，并由自动化测试覆盖。
 
-If this concept advances, the next investments would be authenticated roles, a server-owned campaign model, source ingestion with human confirmation, real provider adapters, audit identities/timestamps, accessibility testing, and observability. They are not required to validate this product loop and were excluded to keep the code maintainable within the assignment window.
+## 人工智能建议的采纳、修改与拒绝
+
+### 采纳
+
+- 采用“完整闭环设计 + 一条关键路径做深”的交付结构；
+- 采用两套创作者组合，对可信度优先和触达效率优先进行显式比较；
+- 采用证据优先原则，要求推荐结论能够回到真实骑行与头戴摄像头证据；
+- 采用智能体时间线 + 结构化产物检查器，让智能体成为主交互，结构化产物成为辅助工作面；
+- 采用固定种子数据、重置演示和确定性逻辑，保证评审无需账号、密钥或网络即可复现。
+
+### 修改
+
+- 最初的产品形态是概览、需求简报、组合规划、搜索与候选、客户评审、活动记录六个并列页签。结合实际业务习惯后，改成“收件箱 → 智能体运行 → 结构化产物检查器”，避免用户自行拼接工作流。
+- 最初只准备做深组合矩阵。后续增加证据资格校准，但仍放在同一检查器中，没有扩张成独立审核中心。
+- 最初的智能体回答几乎立即出现。后续改成“理解任务 → 调用确定性工具 → 组织回答”的可验证阶段和打字机效果；展示的是执行摘要，不是隐藏思维链。
+- 最初计划平均展示全链路功能。最终把工程深度集中在组合矩阵、资格证据和客户字段投影，其余外部能力明确模拟。
+
+### 拒绝
+
+- 拒绝让人工智能直接决定最终创作者名单；
+- 拒绝用一个不透明综合分覆盖真实骑行等硬门禁；
+- 拒绝在没有模型和真实数据源时假装支持通用材料抽取或开放域对话；
+- 拒绝为了笔试引入通用规则引擎、命令总线、事件存储、连接器框架或智能体搭建平台；
+- 拒绝在客户反馈后静默修改已锁定的组合矩阵；
+- 拒绝为低概率异常设计大量恢复代码，避免限时项目失去可维护性和验收时间。
+
+## 资格评分与硬门禁
+
+只有通过资格门禁的候选才计算匹配度分数。当前实际权重为：
+
+- 场景与产品相关性：30%；
+- 头戴摄像头 / 第一视角证据质量：25%；
+- 内容制作能力：15%；
+- 相关内容表现稳定性：15%；
+- 商业可执行性：10%；
+- 受众匹配：5%。
+
+真实自行车骑行、目标市场、平台/内容形式和目标场景属于硬规则。高评分不能覆盖任何硬规则失败；预算略超上限、报价仍为估价或证据过期则进入“需要复核”，而不是被系统装成确定结论。
+
+## 用于证明规则有效的反例
+
+`creator-moto-only` / **Torque Atlas** 拥有较强的第一视角触达表现，但只有摩托车内容。`qualifyCandidateDetailed` 会因“没有真实自行车骑行证据”将其判定为“不合格”，相关行为由 `src/tests/candidate.test.ts` 和 `src/tests/qualification.test.ts` 固定验证。
+
+`creator-missing-evidence` 没有可核验内容，因此进入“需要复核”；系统不会根据资料文案猜测其合格。
+
+这两个反例证明：系统不是按流量或外观分数推荐，而是先验证与骑行头戴摄像头直接相关的证据。
+
+## 客户隐私与字段边界
+
+`toClientCandidate` 创建一个新的白名单对象，只复制允许客户查看的字段；它不会先复制内部候选对象，再删除若干敏感字段。
+
+以下信息不能跨越客户投影边界：
+
+- 历史询价和内部底价；
+- 内部风险备注；
+- 评分分项与人工调整原因；
+- 邮件会话标识；
+- 付款条款和谈判空间；
+- 主选 / 备选策略；
+- 内部搜索条件与淘汰原因。
+
+`src/tests/projection.test.ts` 对这一边界进行自动化断言。
+
+## 验证方式
+
+- `npm test` 验证公式、约束、资格、校准、字段投影、反馈修复、智能体主流程、持久化和中英文切换；
+- `npm run build` 验证 TypeScript 与生产构建；
+- “重置演示”保证人工演示每次从同一种子数据开始；
+- `docs/最终验收记录.md` 将题面要求映射到页面、文件和测试，并单独列出最终人工点击步骤。
+
+自动化测试不能代替视觉与浏览器事件验收。正式提交前仍需从“重置演示”开始完整手点一次。
+
+## 生产化后续方向
+
+如果概念继续进入生产建设，下一阶段优先投入：
+
+1. 服务端持有活动状态和不可变版本；
+2. 登录、角色权限、审计身份和时间；
+3. 原始材料抽取与人工确认的正式评测集；
+4. 真实创作者数据、视频证据、报价和外部通信适配器；
+5. 幂等、失败重试、数据新鲜度和线上可观测性；
+6. 浏览器端到端测试、无障碍和真实用户可用性测试。
+
+这些能力不影响本题对产品闭环和核心决策逻辑的验证，因此没有在限时实现中扩张。
