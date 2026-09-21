@@ -7,7 +7,8 @@ import { candidateScore, qualifyCandidate } from "../domain/candidate";
 import { assessGap } from "../domain/gap";
 import type { CandidateDecision } from "../domain/model";
 import { planMaterialRun, registerArtifact, resolveWorkflowDecision, selectArtifact, startMaterialRun } from "../agent/workflow";
-import { parseAgentIntent } from "../agent/intent";
+import { resolveAgentIntent } from "../agent/intent";
+import { answerCampaignFact } from "../agent/facts";
 import { buildCalibrationBatch, preferenceForReason } from "../agent/calibration";
 import { validateReviewRound } from "../domain/review";
 
@@ -61,7 +62,8 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
       messages: [...state.agent.messages, { id: "message-compare-mix", runId: state.agent.activeRunId, role: "Agent", type: "NextAction", text: "I built two creator mix options. Compare the trade-offs, inspect the Matrix, then lock one direction.", payloadRef: "compare-mix", createdAt: "2026-09-21T09:20:00+08:00" }],
     } };
     case "SEND_AGENT_MESSAGE": {
-      const intent = parseAgentIntent(action.text, action.context);
+      const resolution = resolveAgentIntent(action.text, { state, ...action.context });
+      const intent = resolution.intent;
       const suffix = state.agent.messages.length + 1;
       const candidate = action.context?.candidateId ? state.candidates.find((item) => item.id === action.context!.candidateId) : undefined;
       const searchPackage = candidate ? state.searchPackages.find((item) => item.matrixCellId === candidate.matrixCellId) : undefined;
@@ -75,7 +77,11 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
             ? candidate
               ? `同一 Matrix 单元格中更生活化的备选：${state.candidates.filter((item) => item.id !== candidate.id && item.matrixCellId === candidate.matrixCellId && !state.agent.calibrationFeedback[item.id]).sort((a, b) => candidateScore(b).total - candidateScore(a).total).slice(0, 2).map((item) => `${item.creatorName} (${candidateScore(item).total.toFixed(1)})`).join("、") || "暂无"}。硬约束保持不变。`
               : "请先从候选人卡片选择上下文，再查找相似人选。"
-            : `This deterministic demo can handle the suggested campaign actions; it does not call a general-purpose model. Try: ${intent.suggestions.join(" / ")}.`;
+            : intent.type === "CampaignFact"
+              ? answerCampaignFact(state, intent.query)?.body ?? "当前没有对应的 Campaign 数据。"
+              : intent.type === "Status"
+                ? `当前 Run 状态：${state.agent.runs.find((run) => run.id === state.agent.activeRunId)?.status ?? "尚未开始"}。${state.agent.decisions.some((item) => item.status === "Pending") ? "需要先完成当前 Brief 决策。" : "可以继续执行当前建议动作。"}`
+                : `我无法在当前阶段执行这条指令。你可以尝试：${resolution.suggestions.join(" / ")}。`;
       return { ...state, agent: { ...state.agent, messages: [
         ...state.agent.messages,
         { id: `message-user-${suffix}`, runId: state.agent.activeRunId, role: "User", type: "Text", text: action.text, payloadRef: null, createdAt: "2026-09-21T09:15:00+08:00" },
