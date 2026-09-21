@@ -1,0 +1,83 @@
+export type Locale = "en" | "zh-CN";
+export type TranslationParams = Record<string, string | number>;
+
+export const en = {
+  "nav.inbox": "Inbox",
+  "nav.campaigns": "Campaigns",
+  "nav.runs": "Runs",
+  "language.label": "Language",
+  "language.english": "EN",
+  "language.chinese": "中文",
+  "language.currentEnglish": "English selected",
+  "language.currentChinese": "中文已选择",
+  "language.switchEnglish": "Switch to English",
+  "language.switchChinese": "切换到中文",
+  "shell.agentWorkspace": "Agent workspace",
+  "shell.navigation": "Work navigation",
+  "shell.resetConfirm": "Reset the complete Agent demo?",
+  "shell.reset": "Reset demo",
+  "shell.deterministic": "Deterministic Agent",
+  "shell.noModel": "No online model",
+  "inbox.eyebrow": "WORK INBOX · MON 21 SEP",
+  "inbox.titleLead": "What needs your",
+  "inbox.titleAccent": "judgment today.",
+  "inbox.intro": "Agent work runs in the background. This inbox only asks for decisions, approvals, and exceptions that need a human.",
+  "inbox.waiting": "Waiting for you",
+  "inbox.oneCampaign": "1 campaign",
+  "inbox.readySources": "Three client sources are ready for Agent analysis.",
+  "inbox.owner": "OWNER",
+  "inbox.launch": "LAUNCH",
+  "inbox.weeks": "8 weeks",
+  "inbox.budget": "BUDGET",
+  "inbox.reviewDecisions": "Review decisions",
+  "inbox.reviewPlan": "Review plan",
+  "inbox.openCampaign": "Open campaign",
+  "inbox.agentRunning": "Agent running",
+  "inbox.atRisk": "At risk",
+  "inbox.noCampaigns": "No campaigns",
+  "inbox.runStatus": "Agent run is {status}.",
+} as const;
+
+export type TranslationKey = keyof typeof en;
+
+const zhCN: Record<TranslationKey, string> = {
+  "nav.inbox": "收件箱",
+  "nav.campaigns": "项目",
+  "nav.runs": "运行记录",
+  "language.label": "语言",
+  "language.english": "EN",
+  "language.chinese": "中文",
+  "language.currentEnglish": "English selected",
+  "language.currentChinese": "中文已选择",
+  "language.switchEnglish": "Switch to English",
+  "language.switchChinese": "切换到中文",
+  "shell.agentWorkspace": "Agent 工作区",
+  "shell.navigation": "工作区导航",
+  "shell.resetConfirm": "确定重置完整的 Agent 演示吗？",
+  "shell.reset": "重置演示",
+  "shell.deterministic": "确定性 Agent",
+  "shell.noModel": "未连接在线模型",
+  "inbox.eyebrow": "工作收件箱 · 9 月 21 日 周一",
+  "inbox.titleLead": "今天需要你",
+  "inbox.titleAccent": "处理的事项。",
+  "inbox.intro": "Agent 在后台持续工作。这里仅呈现需要人工判断、批准或处理的异常。",
+  "inbox.waiting": "等待你处理",
+  "inbox.oneCampaign": "1 个项目",
+  "inbox.readySources": "3 份客户原始材料已准备好，可交由 Agent 分析。",
+  "inbox.owner": "负责人",
+  "inbox.launch": "上线周期",
+  "inbox.weeks": "8 周",
+  "inbox.budget": "预算",
+  "inbox.reviewDecisions": "处理决策",
+  "inbox.reviewPlan": "查看计划",
+  "inbox.openCampaign": "打开项目",
+  "inbox.agentRunning": "Agent 运行中",
+  "inbox.atRisk": "存在风险",
+  "inbox.noCampaigns": "暂无项目",
+  "inbox.runStatus": "Agent 当前状态：{status}。",
+};
+
+export function translate(locale: Locale, key: TranslationKey, params: TranslationParams = {}) {
+  const template = locale === "zh-CN" ? zhCN[key] : en[key];
+  return Object.entries(params).reduce((copy, [name, value]) => copy.replaceAll(`{${name}}`, String(value)), template ?? en[key]);
+}

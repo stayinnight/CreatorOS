@@ -145,6 +145,12 @@ button { cursor: pointer; }
 .agent-shell { min-height: 100vh; display: grid; grid-template-columns: 188px minmax(0, 1fr); }
 .global-rail { position: sticky; top: 0; height: 100vh; padding: 24px 14px 18px; display: flex; flex-direction: column; background: var(--ink); color: white; }
 .global-rail .wordmark { padding-inline: 6px; }
+.language-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin: 18px 4px 0; padding: 3px; border: 1px solid #384145; border-radius: 999px; background: #14191b; }
+.language-toggle button { min-height: 30px; padding: 0 8px; border: 0; border-radius: 999px; background: transparent; color: #8f999b; font: 700 10px/1 ui-monospace, monospace; cursor: pointer; transition: background 160ms ease, color 160ms ease, transform 160ms ease; }
+.language-toggle button:hover { color: white; }
+.language-toggle button[aria-pressed="true"] { background: white; color: black; }
+.language-toggle button:active { transform: scale(.96); }
+.language-toggle button:focus-visible { outline: 2px solid white; outline-offset: 2px; }
 .global-rail nav { display: grid; gap: 5px; margin-top: 24px; }
 .global-rail nav a { display: grid; grid-template-columns: 28px 1fr; align-items: center; padding: 11px 10px; border-radius: 7px; color: #aeb6b8; text-decoration: none; font-size: 12px; font-weight: 750; }
 .global-rail nav a span { color: #657073; font: 9px ui-monospace, monospace; }
