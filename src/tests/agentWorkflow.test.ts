@@ -32,4 +32,15 @@ describe("campaign agent workflow", () => {
     expect(updated.artifacts.find((item) => item.id === "batch")?.status).toBe("Stale");
     expect(updated.artifacts.find((item) => item.id === "unrelated")?.status).toBe("Ready");
   });
+
+  it("retries only the failed step", () => {
+    let state = structuredClone(campaignSeed);
+    state = campaignReducer(state, { type: "LOAD_DEMO_MATERIALS" });
+    state = campaignReducer(state, { type: "START_AGENT_RUN" });
+    state = campaignReducer(state, { type: "FAIL_AGENT_STEP", stepId: "step-source", error: "Simulated provider timeout" });
+    expect(state.agent.steps.find((item) => item.id === "step-source")?.status).toBe("Failed");
+    state = campaignReducer(state, { type: "RETRY_AGENT_STEP", stepId: "step-source" });
+    expect(state.agent.steps.find((item) => item.id === "step-source")?.status).toBe("Running");
+    expect(state.agent.steps.find((item) => item.id === "step-read")?.status).toBe("Succeeded");
+  });
 });

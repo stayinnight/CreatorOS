@@ -7,6 +7,7 @@ import { qualifyCandidate } from "../domain/candidate";
 import { assessGap } from "../domain/gap";
 import type { CandidateDecision } from "../domain/model";
 import { planMaterialRun, registerArtifact, resolveWorkflowDecision, selectArtifact, startMaterialRun } from "../agent/workflow";
+import { parseAgentIntent } from "../agent/intent";
 
 export type CampaignAction =
   | { type: "RESET" }
@@ -28,7 +29,10 @@ export type CampaignAction =
   | { type: "START_AGENT_RUN" }
   | { type: "RESOLVE_AGENT_DECISION"; decisionId: string; value: string }
   | { type: "OPEN_ARTIFACT"; artifactId: string }
-  | { type: "CLOSE_ARTIFACT" };
+  | { type: "CLOSE_ARTIFACT" }
+  | { type: "SEND_AGENT_MESSAGE"; text: string; context?: { candidateId?: string } }
+  | { type: "FAIL_AGENT_STEP"; stepId: string; error: string }
+  | { type: "RETRY_AGENT_STEP"; stepId: string };
 
 function activity(message: string) {
   return { id: `activity-${message.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}`, at: "2026-09-21T10:00:00+08:00", kind: "Planning", message, status: "Success" as const };
@@ -41,6 +45,42 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
     case "START_AGENT_RUN": return { ...state, agent: startMaterialRun(state.agent) };
     case "OPEN_ARTIFACT": return { ...state, agent: selectArtifact(state.agent, action.artifactId) };
     case "CLOSE_ARTIFACT": return { ...state, agent: selectArtifact(state.agent, null) };
+    case "SEND_AGENT_MESSAGE": {
+      const intent = parseAgentIntent(action.text, action.context);
+      const suffix = state.agent.messages.length + 1;
+      const acknowledgement = intent.type === "ScopeRun"
+        ? "明白。本次先完成 Brief 整理；Matrix 和候选人工作会保持待办，不会自动推进。"
+        : intent.type === "ExplainCandidate"
+          ? "我会基于可核验骑行内容、场景匹配度、制作能力和商业条件解释推荐原因。"
+          : intent.type === "FindSimilar"
+            ? "我会保留当前候选人的场景与平台约束，并提高生活化内容偏好。"
+            : `This deterministic demo can handle the suggested campaign actions; it does not call a general-purpose model. Try: ${intent.suggestions.join(" / ")}.`;
+      return { ...state, agent: { ...state.agent, messages: [
+        ...state.agent.messages,
+        { id: `message-user-${suffix}`, runId: state.agent.activeRunId, role: "User", type: "Text", text: action.text, payloadRef: null, createdAt: "2026-09-21T09:15:00+08:00" },
+        { id: `message-agent-${suffix}`, runId: state.agent.activeRunId, role: "Agent", type: "Text", text: acknowledgement, payloadRef: null, createdAt: "2026-09-21T09:15:01+08:00" },
+      ] } };
+    }
+    case "FAIL_AGENT_STEP": {
+      const step = state.agent.steps.find((item) => item.id === action.stepId);
+      if (!step) return state;
+      return { ...state, agent: {
+        ...state.agent,
+        steps: state.agent.steps.map((item) => item.id === action.stepId ? { ...item, status: "Failed" as const, error: action.error } : item),
+        runs: state.agent.runs.map((run) => run.id === step.runId ? { ...run, status: "Failed" as const, currentStepId: action.stepId } : run),
+        messages: [...state.agent.messages, { id: `message-exception-${action.stepId}`, runId: step.runId, role: "Agent", type: "Exception", text: action.error, payloadRef: action.stepId, createdAt: "2026-09-21T09:16:00+08:00" }],
+      } };
+    }
+    case "RETRY_AGENT_STEP": {
+      const step = state.agent.steps.find((item) => item.id === action.stepId);
+      if (!step || step.status !== "Failed") return state;
+      return { ...state, agent: {
+        ...state.agent,
+        steps: state.agent.steps.map((item) => item.id === action.stepId ? { ...item, status: "Running" as const, error: null, startedAt: "2026-09-21T09:17:00+08:00" } : item),
+        runs: state.agent.runs.map((run) => run.id === step.runId ? { ...run, status: "Running" as const, currentStepId: action.stepId } : run),
+        messages: [...state.agent.messages, { id: `message-retry-${action.stepId}`, runId: step.runId, role: "Agent", type: "RunGroup", text: `Retrying ${step.label}`, payloadRef: step.runId, createdAt: "2026-09-21T09:17:00+08:00" }],
+      } };
+    }
     case "RESOLVE_AGENT_DECISION": {
       const decision = state.agent.decisions.find((item) => item.id === action.decisionId);
       if (!decision) return state;
