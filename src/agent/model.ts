@@ -79,6 +79,29 @@ export interface CampaignArtifact {
   createdAt: string;
 }
 
+export type CalibrationDecision = "Accepted" | "Rejected" | "NeedsFollowUp";
+export type RejectReason = "No real cycling" | "Too commercial" | "Not enough POV evidence" | "Audience mismatch" | "Quote too high";
+
+export interface CalibrationReview {
+  candidateId: string;
+  decision: CalibrationDecision;
+  reason: RejectReason | null;
+  reviewedAt: string;
+}
+
+export interface CampaignPreference {
+  id: string;
+  label: string;
+  strength: number;
+  affectedCandidateIds: string[];
+}
+
+export interface PreferenceImpact extends CampaignPreference {
+  kind: "SoftPreference" | "QualificationCorrection";
+  candidateId: string;
+  reason: RejectReason;
+}
+
 export interface AgentWorkspaceState {
   activeRunId: string | null;
   selectedArtifactId: string | null;
@@ -91,4 +114,10 @@ export interface AgentWorkspaceState {
   calibrationCandidateIds: string[];
   calibrationFeedback: Record<string, string>;
   campaignPreferences: string[];
+  calibrationReviews: CalibrationReview[];
+  calibrationPreferences: CampaignPreference[];
+  calibrationPreferenceConfirmed: boolean;
+  calibrationSelectedCandidateId: string | null;
+  approvedPrimaryIds: string[];
+  approvedBackupIds: string[];
 }

@@ -13,6 +13,9 @@ import { continueFromBrief, reviseRunToBriefOnly } from "../agent/runRevision";
 import { buildCalibrationBatch, preferenceForReason } from "../agent/calibration";
 import { validateReviewRound } from "../domain/review";
 import { getRecommendedNextAction } from "../agent/recommendedAction";
+import { applyPreference, buildApprovedSlate, getCalibrationReadiness, previewRejectImpact } from "../agent/calibrationReview";
+import { qualifyCandidateDetailed } from "../domain/qualification";
+import type { CalibrationDecision, PreferenceImpact, RejectReason } from "../agent/model";
 
 export type CampaignAction =
   | { type: "RESET" }
@@ -41,6 +44,10 @@ export type CampaignAction =
   | { type: "GENERATE_MIX_OPTIONS" }
   | { type: "START_SOURCING" }
   | { type: "REJECT_CALIBRATION_CANDIDATE"; candidateId: string; reason: string }
+  | { type: "REVIEW_CALIBRATION_CANDIDATE"; candidateId: string; decision: CalibrationDecision; reason?: RejectReason }
+  | { type: "APPLY_CALIBRATION_PREFERENCE"; impact: PreferenceImpact }
+  | { type: "CONFIRM_NO_CALIBRATION_ADJUSTMENT" }
+  | { type: "SELECT_CALIBRATION_CANDIDATE"; candidateId: string }
   | { type: "APPROVE_CALIBRATION" }
   | { type: "PREPARE_REVIEW" }
   | { type: "APPLY_SEEDED_CLIENT_FEEDBACK" };
@@ -199,12 +206,25 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
     }
     case "REJECT_CALIBRATION_CANDIDATE": {
       const preference = preferenceForReason(action.reason);
-      return { ...state, agent: { ...state.agent, calibrationFeedback: { ...state.agent.calibrationFeedback, [action.candidateId]: action.reason }, campaignPreferences: [...new Set([...state.agent.campaignPreferences, preference])], messages: [...state.agent.messages, { id: `message-calibration-${action.candidateId}`, runId: state.agent.activeRunId, role: "Agent", type: "Text", text: `Applied campaign preference: ${preference}. Hard constraints from Brief and Matrix are unchanged.`, payloadRef: action.candidateId, createdAt: "2026-09-21T09:50:00+08:00" }] } };
+      const reason = action.reason as RejectReason;
+      const impact = previewRejectImpact(action.candidateId, reason, state.candidates);
+      return { ...state, agent: { ...state.agent, calibrationFeedback: { ...state.agent.calibrationFeedback, [action.candidateId]: action.reason }, campaignPreferences: [...new Set([...state.agent.campaignPreferences, preference])], calibrationReviews: [...state.agent.calibrationReviews.filter((item) => item.candidateId !== action.candidateId), { candidateId: action.candidateId, decision: "Rejected", reason, reviewedAt: "2026-09-21T09:50:00+08:00" }], calibrationPreferences: applyPreference(state.agent.calibrationPreferences, impact), calibrationPreferenceConfirmed: true, messages: [...state.agent.messages, { id: `message-calibration-${action.candidateId}`, runId: state.agent.activeRunId, role: "Agent", type: "Text", text: `Applied campaign preference: ${preference}. Hard constraints from Brief and Matrix are unchanged.`, payloadRef: action.candidateId, createdAt: "2026-09-21T09:50:00+08:00" }] } };
     }
+    case "REVIEW_CALIBRATION_CANDIDATE": return { ...state, agent: { ...state.agent, calibrationReviews: [...state.agent.calibrationReviews.filter((item) => item.candidateId !== action.candidateId), { candidateId: action.candidateId, decision: action.decision, reason: action.reason ?? null, reviewedAt: "2026-09-21T09:50:00+08:00" }] } };
+    case "APPLY_CALIBRATION_PREFERENCE": return { ...state, agent: { ...state.agent, calibrationPreferences: applyPreference(state.agent.calibrationPreferences, action.impact), calibrationPreferenceConfirmed: true } };
+    case "CONFIRM_NO_CALIBRATION_ADJUSTMENT": return { ...state, agent: { ...state.agent, calibrationPreferenceConfirmed: true } };
+    case "SELECT_CALIBRATION_CANDIDATE": return { ...state, agent: { ...state.agent, calibrationSelectedCandidateId: action.candidateId } };
     case "APPROVE_CALIBRATION": {
+      const packageByCell = new Map(state.searchPackages.map((item) => [item.matrixCellId, item]));
+      const qualificationById = Object.fromEntries(state.candidates.map((candidate) => [candidate.id, qualifyCandidateDetailed(candidate, packageByCell.get(candidate.matrixCellId)!)]));
+      const readiness = getCalibrationReadiness(state.agent.calibrationReviews, qualificationById, state.agent.calibrationPreferenceConfirmed);
+      if (!readiness.ready) return { ...state, agent: { ...state.agent, messages: [...state.agent.messages, { id: `message-calibration-blocked-${state.agent.messages.length}`, runId: state.agent.activeRunId, role: "Agent", type: "Exception", text: readiness.blockers.join(" · "), payloadRef: "step-calibrate", createdAt: "2026-09-21T09:55:00+08:00" }] } };
+      const slate = buildApprovedSlate(state.candidates, qualificationById, state.agent.calibrationPreferences, state.agent.calibrationReviews);
+      if (slate.error) return { ...state, agent: { ...state.agent, messages: [...state.agent.messages, { id: `message-calibration-slate-${state.agent.messages.length}`, runId: state.agent.activeRunId, role: "Agent", type: "Exception", text: slate.error, payloadRef: "step-calibrate", createdAt: "2026-09-21T09:55:00+08:00" }] } };
       let agent = registerArtifact(state.agent, { id: "artifact-client-slate-v1", campaignId: state.id, kind: "CandidateBatch", version: 1, status: "Ready", sourceRunId: "run-brief-to-shortlist", sourceStepId: "step-calibrate", parentArtifactIds: ["artifact-calibration-batch-01"], domainRef: "client-slate-v1", summary: "Client slate ready · 30 primaries + 10 internal backups", createdAt: "2026-09-21T09:55:00+08:00" });
-      agent = { ...agent, selectedArtifactId: "artifact-client-slate-v1", steps: agent.steps.map((step) => step.id === "step-calibrate" ? { ...step, status: "Succeeded" as const, summary: "Calibration direction approved", completedAt: "2026-09-21T09:55:00+08:00" } : step.id === "step-publish" ? { ...step, status: "Pending" as const } : step), runs: agent.runs.map((run) => run.id === agent.activeRunId ? { ...run, status: "Running" as const, currentStepId: "step-publish" } : run), messages: [...agent.messages, { id: "message-next-review", runId: agent.activeRunId, role: "Agent", type: "NextAction", text: "Calibration approved. I can validate the 30 + 10 slate and prepare the client review.", payloadRef: "prepare-review", createdAt: "2026-09-21T09:55:30+08:00" }] };
-      return { ...state, agent };
+      agent = { ...agent, approvedPrimaryIds: slate.primaryIds, approvedBackupIds: slate.backupIds, selectedArtifactId: "artifact-client-slate-v1", steps: agent.steps.map((step) => step.id === "step-calibrate" ? { ...step, status: "Succeeded" as const, summary: "Calibration direction approved", completedAt: "2026-09-21T09:55:00+08:00" } : step.id === "step-publish" ? { ...step, status: "Pending" as const } : step), runs: agent.runs.map((run) => run.id === agent.activeRunId ? { ...run, status: "Running" as const, currentStepId: "step-publish" } : run), messages: [...agent.messages, { id: "message-next-review", runId: agent.activeRunId, role: "Agent", type: "NextAction", text: "Calibration approved. I can validate the 30 + 10 slate and prepare the client review.", payloadRef: "prepare-review", createdAt: "2026-09-21T09:55:30+08:00" }] };
+      const primarySet = new Set(slate.primaryIds); const backupSet = new Set(slate.backupIds);
+      return { ...state, candidates: state.candidates.map((candidate) => ({ ...candidate, role: primarySet.has(candidate.id) ? "Primary" : backupSet.has(candidate.id) ? "Backup" : "Unassigned" })), agent };
     }
     case "PREPARE_REVIEW": {
       const packageByCell = new Map(state.searchPackages.map((item) => [item.matrixCellId, item]));

@@ -25,7 +25,7 @@ describe("candidate qualification", () => {
     const pkg = packages.find((item) => item.matrixCellId === candidate.matrixCellId)!;
     const result = qualifyCandidate(candidate, pkg);
     expect(result.status).toBe("Needs Review");
-    expect(result.risks).toContain("报价超出单元格上限或仍为估价");
+    expect(result.risks).toContain("报价超出单元格上限");
   });
 
   it("uses the published transparent score weights", () => {
