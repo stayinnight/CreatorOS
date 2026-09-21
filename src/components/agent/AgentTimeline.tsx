@@ -7,6 +7,8 @@ import { PlanCard } from "./PlanCard";
 import { RunGroupCard } from "./RunGroupCard";
 import { ProgressCard } from "./ProgressCard";
 import { getActionLifecycle, getRecommendedNextAction, type RecommendedActionId } from "../../agent/recommendedAction";
+import { executeRecommendedAction } from "../../agent/executeRecommendedAction";
+import { useNavigate } from "react-router-dom";
 
 const legacyActionIds: Record<string, RecommendedActionId> = {
   "generate-mix": "build-mix",
@@ -16,6 +18,7 @@ const legacyActionIds: Record<string, RecommendedActionId> = {
 
 export function AgentTimeline() {
   const { state, dispatch } = useCampaign();
+  const navigate = useNavigate();
   const recommendation = getRecommendedNextAction(state);
   const lastActionIndex = new Map<string, number>();
   state.agent.messages.forEach((message, index) => { if (message.type === "NextAction" && message.payloadRef) lastActionIndex.set(message.payloadRef, index); });
@@ -54,10 +57,7 @@ export function AgentTimeline() {
           : compareCurrent ? "Current" as const
             : compareComplete ? "Completed" as const : "Superseded" as const;
       const recommendedAction = recommendedId && recommendation?.id === recommendedId ? recommendation : null;
-      const recommendedCommand = recommendedAction?.command;
-      const onRecommended = recommendedCommand?.kind === "dispatch" ? () => dispatch(recommendedCommand.action)
-        : recommendedCommand?.kind === "open" ? () => dispatch({ type: "OPEN_ARTIFACT", artifactId: recommendedCommand.artifactId })
-          : undefined;
+      const onRecommended = recommendedAction ? () => executeRecommendedAction(recommendedAction, { dispatch, navigate, openArtifact: (artifactId) => dispatch({ type: "OPEN_ARTIFACT", artifactId }) }) : undefined;
       const onAction = recommendedAction ? onRecommended : message.payloadRef === "generate-mix" ? () => dispatch({ type: "GENERATE_MIX_OPTIONS" })
         : message.payloadRef === "compare-mix" ? () => dispatch({ type: "OPEN_ARTIFACT", artifactId: "artifact-mix-draft" })
           : message.payloadRef === "prepare-review" ? () => dispatch({ type: "PREPARE_REVIEW" })
