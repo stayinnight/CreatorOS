@@ -20,11 +20,11 @@ describe("candidate qualification", () => {
     expect(qualifyCandidate(candidate, pkg).status).toBe("Needs Review");
   });
 
-  it("keeps an over-budget but relevant creator visible for commercial review", () => {
+  it("keeps an over-budget but relevant creator visible as a commercial risk in legacy review", () => {
     const candidate = campaignSeed.candidates.find((item) => item.id === "creator-over-budget")!;
     const pkg = packages.find((item) => item.matrixCellId === candidate.matrixCellId)!;
     const result = qualifyCandidate(candidate, pkg);
-    expect(result.status).toBe("Needs Review");
+    expect(result.status).toBe("Qualified");
     expect(result.risks).toContain("报价超出单元格上限");
   });
 

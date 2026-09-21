@@ -44,6 +44,10 @@ describe("recommended campaign action", () => {
     state = campaignReducer(state, { type: "START_SOURCING" });
     expect(getRecommendedNextAction(state)?.command).toEqual({ kind: "dispatch", action: { type: "APPROVE_CALIBRATION" } });
 
+    state = campaignReducer(state, { type: "REVIEW_CALIBRATION_CANDIDATE", candidateId: "creator-01", decision: "Accepted" });
+    state = campaignReducer(state, { type: "REVIEW_CALIBRATION_CANDIDATE", candidateId: "creator-02", decision: "Accepted" });
+    state = campaignReducer(state, { type: "REVIEW_CALIBRATION_CANDIDATE", candidateId: "creator-moto-only", decision: "Rejected", reason: "No real cycling" });
+    state = campaignReducer(state, { type: "CONFIRM_NO_CALIBRATION_ADJUSTMENT" });
     state = campaignReducer(state, { type: "APPROVE_CALIBRATION" });
     expect(getRecommendedNextAction(state)?.id).toBe("validate-slate");
   });

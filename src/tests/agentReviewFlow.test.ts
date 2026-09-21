@@ -12,6 +12,10 @@ function reachApprovedCalibration() {
   state = campaignReducer(state, { type: "LOCK_MATRIX", scenarioId: "scenario-a" });
   state = campaignReducer(state, { type: "GENERATE_PACKAGES", scenarioId: "scenario-a" });
   state = campaignReducer(state, { type: "START_SOURCING" });
+  state = campaignReducer(state, { type: "REVIEW_CALIBRATION_CANDIDATE", candidateId: "creator-01", decision: "Accepted" });
+  state = campaignReducer(state, { type: "REVIEW_CALIBRATION_CANDIDATE", candidateId: "creator-02", decision: "Accepted" });
+  state = campaignReducer(state, { type: "REVIEW_CALIBRATION_CANDIDATE", candidateId: "creator-moto-only", decision: "Rejected", reason: "No real cycling" });
+  state = campaignReducer(state, { type: "CONFIRM_NO_CALIBRATION_ADJUSTMENT" });
   return campaignReducer(state, { type: "APPROVE_CALIBRATION" });
 }
 
