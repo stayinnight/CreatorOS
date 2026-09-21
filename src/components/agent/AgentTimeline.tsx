@@ -12,11 +12,11 @@ export function AgentTimeline() {
     if (message.type === "Plan") {
       const run = state.agent.runs.find((item) => item.id === message.payloadRef);
       if (!run) return null;
-      return <PlanCard key={message.id} run={run} steps={state.agent.steps.filter((step) => run.stepIds.includes(step.id))} onStart={() => dispatch({ type: "START_AGENT_RUN" })} />;
+      return <PlanCard key={message.id} run={run} steps={state.agent.steps.filter((step) => step.runId === run.id && run.stepIds.includes(step.id))} onStart={() => dispatch({ type: "START_AGENT_RUN" })} />;
     }
     if (message.type === "RunGroup") {
       const run = state.agent.runs.find((item) => item.id === message.payloadRef);
-      return <RunGroupCard key={message.id} steps={state.agent.steps.filter((step) => run?.stepIds.includes(step.id)).filter((step) => step.status !== "Pending")} />;
+      return <RunGroupCard key={message.id} steps={state.agent.steps.filter((step) => step.runId === run?.id && run?.stepIds.includes(step.id)).filter((step) => step.status !== "Pending")} />;
     }
     if (message.type === "Decision") {
       const decision = state.agent.decisions.find((item) => item.id === message.payloadRef);

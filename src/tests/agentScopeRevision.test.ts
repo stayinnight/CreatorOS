@@ -15,5 +15,9 @@ describe("Brief-only Run revision", () => {
     state = campaignReducer(state, { type: "RESOLVE_AGENT_DECISION", decisionId: "decision-sports", value: "Pending; excluded from current plan" });
     expect(state.agent.runs[0].status).toBe("Completed");
     expect(state.agent.messages.some((message) => message.payloadRef === "generate-mix")).toBe(false);
+
+    state = campaignReducer(state, { type: "SEND_AGENT_MESSAGE", text: "继续完整计划" });
+    expect(state.agent.runs).toHaveLength(2);
+    expect(state.agent.runs[1]).toEqual(expect.objectContaining({ scope: "FullCampaign", continuationOfRunId: "run-brief-to-shortlist", currentStepId: "step-mix" }));
   });
 });

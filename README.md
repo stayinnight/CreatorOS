@@ -50,6 +50,14 @@ npm run build
 
 用户在 Decision Card、Matrix、校准和发布环节的操作会真实改变计算结果、状态迁移和下游 Artifact。飞书、Gmail、公开搜索、实时报价和真实外发均不在本地 Demo 中执行。
 
+## 交互与视觉说明
+
+- Composer 快捷操作会随当前 Run 阶段变化；未选中候选人时不会展示需要候选人上下文的指令。
+- 在 Brief 决策阶段输入 **先只整理 Brief** 会真实修改 Run：下游步骤标记为 Skipped，时间线生成 Revised Plan，Brief 发布后该 Run 结束且不会继续生成 Mix。
+- 预算、市场、目标、证据要求和 Matrix 等问答直接读取当前 Campaign state；超出范围时返回当前阶段可执行建议。
+- 每个输入会经过短暂的 `Agent working` 过程，再显示最终结果；该过程不模拟在线模型调用，并支持 `prefers-reduced-motion`。
+- 界面采用黑白编辑式控制台，工作正文为 15px、控制项为 14px、辅助信息不低于 12px；状态依赖文字、图标和线型，不依赖颜色。
+
 ## 项目结构
 
 - `src/agent/`：Run、Step、Decision、Artifact、有限意图与校准逻辑。

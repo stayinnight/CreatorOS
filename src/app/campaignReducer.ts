@@ -9,7 +9,7 @@ import type { CandidateDecision } from "../domain/model";
 import { planMaterialRun, registerArtifact, resolveWorkflowDecision, selectArtifact, startMaterialRun } from "../agent/workflow";
 import { resolveAgentIntent } from "../agent/intent";
 import { answerCampaignFact } from "../agent/facts";
-import { reviseRunToBriefOnly } from "../agent/runRevision";
+import { continueFromBrief, reviseRunToBriefOnly } from "../agent/runRevision";
 import { buildCalibrationBatch, preferenceForReason } from "../agent/calibration";
 import { validateReviewRound } from "../domain/review";
 
@@ -70,6 +70,7 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
         const withUser = { ...state.agent, messages: [...state.agent.messages, { id: `message-user-${suffix}`, runId: state.agent.activeRunId, role: "User" as const, type: "Text" as const, text: action.text, payloadRef: null, createdAt: "2026-09-21T09:15:00+08:00" }] };
         return { ...state, agent: reviseRunToBriefOnly(withUser) };
       }
+      if (intent.type === "ContinuePlan") return { ...state, agent: continueFromBrief({ ...state.agent, messages: [...state.agent.messages, { id: `message-user-${suffix}`, runId: state.agent.activeRunId, role: "User", type: "Text", text: action.text, payloadRef: null, createdAt: "2026-09-21T09:20:00+08:00" }] }) };
       const candidate = action.context?.candidateId ? state.candidates.find((item) => item.id === action.context!.candidateId) : undefined;
       const searchPackage = candidate ? state.searchPackages.find((item) => item.matrixCellId === candidate.matrixCellId) : undefined;
       const acknowledgement = intent.type === "ExplainCandidate"
