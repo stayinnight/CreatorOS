@@ -5,8 +5,9 @@ import type { CampaignArtifact, PreferenceImpact, RejectReason } from "../../age
 import { qualifyCandidateDetailed } from "../../domain/qualification";
 import { QualificationInspector } from "./QualificationInspector";
 import { CalibrationActions } from "./CalibrationActions";
+import type { CampaignAction } from "../../app/campaignReducer";
 
-export function CandidateBatchDetail({ artifact, onAskAgent }: { artifact: CampaignArtifact; onAskAgent?: (prompt: string, context?: { candidateId?: string }) => void }) {
+export function CandidateBatchDetail({ artifact, onAskAgent, onPerformAction }: { artifact: CampaignArtifact; onAskAgent?: (prompt: string, context?: { candidateId?: string }) => void; onPerformAction?: (action: CampaignAction) => boolean }) {
   const { state, dispatch } = useCampaign();
   const [impact, setImpact] = useState<PreferenceImpact | null>(null);
   const packageByCell = useMemo(() => new Map(state.searchPackages.map((item) => [item.matrixCellId, item])), [state.searchPackages]);
@@ -32,6 +33,6 @@ export function CandidateBatchDetail({ artifact, onAskAgent }: { artifact: Campa
     <header className="calibration-candidate-nav"><div><span>CALIBRATION · {selectedIndex + 1}/{ids.length}</span><strong>{selected.creatorName}</strong><small>{selected.handle} · {selected.platform} · {selected.matrixCellId}</small></div><div className="calibration-sequence">{ids.map((id, index) => <button aria-label={`查看候选 ${index + 1}`} className={`${id === selected.id ? "active" : ""} ${state.agent.calibrationReviews.some((item) => item.candidateId === id) ? "reviewed" : ""}`} key={id} onClick={() => selectAt(index)}>{index + 1}</button>)}</div><div className="candidate-nav-buttons"><button aria-label="上一个候选" onClick={() => selectAt(selectedIndex - 1)}>←</button><button aria-label="下一个候选" onClick={() => selectAt(selectedIndex + 1)}>→</button></div></header>
     <QualificationInspector candidate={selected} searchPackage={searchPackage} result={result} onAsk={ask} />
     {impact && <aside className="preference-impact"><div><span>影响预览</span><strong>{impact.label}</strong><p>影响同一 Matrix Cell 的 {impact.affectedCandidateIds.length} 名候选；Brief 与 Locked Matrix 不变。</p></div><button onClick={() => { dispatch({ type: "APPLY_CALIBRATION_PREFERENCE", impact }); review("Rejected", impact.reason); setImpact(null); }}>应用并重排</button><button onClick={() => setImpact(null)}>取消</button></aside>}
-    <CalibrationActions candidateId={selected.id} readiness={readiness} onReview={(decision) => review(decision)} onPreviewReject={(reason) => setImpact(previewRejectImpact(selected.id, reason, state.candidates))} onConfirmNoAdjustment={() => dispatch({ type: "CONFIRM_NO_CALIBRATION_ADJUSTMENT" })} onApprove={() => dispatch({ type: "APPROVE_CALIBRATION" })} />
+    <CalibrationActions candidateId={selected.id} readiness={readiness} onReview={(decision) => review(decision)} onPreviewReject={(reason) => setImpact(previewRejectImpact(selected.id, reason, state.candidates))} onConfirmNoAdjustment={() => dispatch({ type: "CONFIRM_NO_CALIBRATION_ADJUSTMENT" })} onApprove={() => onPerformAction ? onPerformAction({ type: "APPROVE_CALIBRATION" }) : dispatch({ type: "APPROVE_CALIBRATION" })} />
   </div>;
 }

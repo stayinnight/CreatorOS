@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { buildAgentTurnPlan } from "../agent/agentTurn";
+import { buildAgentTurnPlan, buildCampaignActionTurnPlan } from "../agent/agentTurn";
 import { campaignReducer } from "../app/campaignReducer";
 import { campaignSeed } from "../data/seed";
 
 describe("agent turn lifecycle", () => {
+  it("maps workflow actions to truthful visible tool steps", () => {
+    expect(buildCampaignActionTurnPlan("LOAD_DEMO_MATERIALS").steps.map((step) => step.kind)).toEqual(["ReadSources", "ExtractBrief", "DetectConflicts"]);
+    expect(buildCampaignActionTurnPlan("START_SOURCING").steps.map((step) => step.kind)).toEqual(["EvaluateQualification", "InspectEvidence", "BuildCalibration"]);
+  });
   it("plans real candidate checks for a recommendation explanation", () => {
     const plan = buildAgentTurnPlan(campaignSeed, "为什么推荐他", { candidateId: "creator-01" });
     expect(plan.understanding).toBe("解释当前候选的推荐依据");

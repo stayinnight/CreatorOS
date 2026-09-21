@@ -8,9 +8,15 @@ const steps = [{ id: "tool-1", kind: "ReadWorkflowState" as const, label: "读�
 describe("agent turn UI", () => {
   it("shows the current stage and real tool progress", () => {
     const html = renderToString(<AgentTurnTrace phase="RunningTools" understanding="确认当前工作流状态与下一步" steps={steps} completedStepCount={0} />);
+    expect(html).toContain("行动 · 正在调用工具");
     expect(html).toContain("确认当前工作流状态与下一步");
     expect(html).toContain("读取当前 Run 与 Artifact 状态");
     expect(html).toContain("Running");
+  });
+
+  it("names the thinking and answering stages explicitly", () => {
+    expect(renderToString(<AgentTurnTrace phase="Understanding" understanding="理解任务" steps={steps} completedStepCount={0} />)).toContain("思考 · 正在理解任务");
+    expect(renderToString(<AgentTurnTrace phase="Composing" understanding="组织结果" steps={steps} completedStepCount={1} />)).toContain("回答 · 正在组织结果");
   });
 
   it("renders a completed trace collapsed", () => {

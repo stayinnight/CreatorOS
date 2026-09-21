@@ -22,6 +22,7 @@ const legacyActionIds: Record<string, RecommendedActionId> = {
 export function AgentTimeline({ onOpenArtifact = (artifactId) => undefined, openingArtifactId = null, turn }: { onOpenArtifact?: (artifactId: string) => void; openingArtifactId?: string | null; turn?: AgentTurnController }) {
   const { state, dispatch } = useCampaign();
   const navigate = useNavigate();
+  const perform = (action: Parameters<typeof dispatch>[0]) => turn ? turn.performAction(action) : dispatch(action);
   const recommendation = getRecommendedNextAction(state);
   const lastActionIndex = new Map<string, number>();
   state.agent.messages.forEach((message, index) => { if (message.type === "NextAction" && message.payloadRef) lastActionIndex.set(message.payloadRef, index); });
@@ -29,7 +30,7 @@ export function AgentTimeline({ onOpenArtifact = (artifactId) => undefined, open
     if (message.type === "Plan") {
       const run = state.agent.runs.find((item) => item.id === message.payloadRef);
       if (!run) return null;
-      return <PlanCard key={message.id} run={run} steps={state.agent.steps.filter((step) => step.runId === run.id && run.stepIds.includes(step.id))} onStart={() => dispatch({ type: "START_AGENT_RUN" })} />;
+      return <PlanCard key={message.id} run={run} steps={state.agent.steps.filter((step) => step.runId === run.id && run.stepIds.includes(step.id))} onStart={() => perform({ type: "START_AGENT_RUN" })} />;
     }
     if (message.type === "RunGroup") {
       const run = state.agent.runs.find((item) => item.id === message.payloadRef);
@@ -38,7 +39,7 @@ export function AgentTimeline({ onOpenArtifact = (artifactId) => undefined, open
     if (message.type === "Decision") {
       const decision = state.agent.decisions.find((item) => item.id === message.payloadRef);
       if (!decision) return null;
-      return <DecisionCard key={message.id} decision={decision} sources={state.brief.sources.filter((source) => decision.evidenceSourceIds.includes(source.id))} onResolve={(value) => dispatch({ type: "RESOLVE_AGENT_DECISION", decisionId: decision.id, value })} />;
+      return <DecisionCard key={message.id} decision={decision} sources={state.brief.sources.filter((source) => decision.evidenceSourceIds.includes(source.id))} onResolve={(value) => perform({ type: "RESOLVE_AGENT_DECISION", decisionId: decision.id, value })} />;
     }
     if (message.type === "Artifact") {
       const artifact = state.agent.artifacts.find((item) => item.id === message.payloadRef);
@@ -47,7 +48,7 @@ export function AgentTimeline({ onOpenArtifact = (artifactId) => undefined, open
     }
     if (message.type === "Exception") {
       const step = state.agent.steps.find((item) => item.id === message.payloadRef);
-      return <ExceptionCard key={message.id} message={message} step={step} onRetry={() => message.payloadRef && dispatch({ type: "RETRY_AGENT_STEP", stepId: message.payloadRef })} />;
+      return <ExceptionCard key={message.id} message={message} step={step} onRetry={() => message.payloadRef && perform({ type: "RETRY_AGENT_STEP", stepId: message.payloadRef })} />;
     }
     if (message.type === "NextAction") {
       const recommendedId = message.payloadRef?.startsWith("recommended:") ? message.payloadRef.slice("recommended:".length) as RecommendedActionId : null;
@@ -60,11 +61,11 @@ export function AgentTimeline({ onOpenArtifact = (artifactId) => undefined, open
           : compareCurrent ? "Current" as const
             : compareComplete ? "Completed" as const : "Superseded" as const;
       const recommendedAction = recommendedId && recommendation?.id === recommendedId ? recommendation : null;
-      const onRecommended = recommendedAction ? () => executeRecommendedAction(recommendedAction, { dispatch, navigate, openArtifact: onOpenArtifact }) : undefined;
-      const onAction = recommendedAction ? onRecommended : message.payloadRef === "generate-mix" ? () => dispatch({ type: "GENERATE_MIX_OPTIONS" })
+      const onRecommended = recommendedAction ? () => executeRecommendedAction(recommendedAction, { dispatch: perform, navigate, openArtifact: onOpenArtifact }) : undefined;
+      const onAction = recommendedAction ? onRecommended : message.payloadRef === "generate-mix" ? () => perform({ type: "GENERATE_MIX_OPTIONS" })
         : message.payloadRef === "compare-mix" ? () => onOpenArtifact("artifact-mix-draft")
-          : message.payloadRef === "prepare-review" ? () => dispatch({ type: "PREPARE_REVIEW" })
-            : message.payloadRef === "publish-review" ? () => dispatch({ type: "PUBLISH_REVIEW" }) : undefined;
+          : message.payloadRef === "prepare-review" ? () => perform({ type: "PREPARE_REVIEW" })
+            : message.payloadRef === "publish-review" ? () => perform({ type: "PUBLISH_REVIEW" }) : undefined;
       const label = recommendedAction?.label ?? (message.payloadRef === "generate-mix" ? "Build mix options" : message.payloadRef === "compare-mix" ? "Open comparison" : message.payloadRef === "prepare-review" ? "Validate slate" : message.payloadRef === "publish-review" ? "Publish Round 1" : undefined);
       const previewHref = recommendedAction?.command.kind === "navigate" ? recommendedAction.command.to : message.payloadRef === "publish-review" ? `/campaigns/${state.id}/client-preview` : undefined;
       const targetArtifactId = recommendedAction?.command.kind === "open" ? recommendedAction.command.artifactId : message.payloadRef === "compare-mix" ? "artifact-mix-draft" : null;
