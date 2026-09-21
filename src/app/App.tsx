@@ -1,67 +1,23 @@
 import { NavLink, Route, Routes } from "react-router-dom";
-import { BriefPage } from "../pages/BriefPage";
-import { CampaignProvider } from "./CampaignProvider";
-import { MixPlannerPage } from "../pages/MixPlannerPage";
-import { SearchCandidatesPage } from "../pages/SearchCandidatesPage";
-import { ClientReviewPage } from "../pages/ClientReviewPage";
-import { OverviewPage } from "../pages/OverviewPage";
-import { ActivityPage } from "../pages/ActivityPage";
 import { resetState } from "../data/persistence";
-import { useCampaign } from "./CampaignProvider";
+import { CampaignDeskPage } from "../pages/CampaignDeskPage";
+import { InboxPage } from "../pages/InboxPage";
+import { RunsPage } from "../pages/RunsPage";
+import { CampaignProvider, useCampaign } from "./CampaignProvider";
 
-const navigation = [
-  { label: "Overview", path: "/" },
-  { label: "Brief", path: "/brief" },
-  { label: "Mix Planner", path: "/mix-planner" },
-  { label: "Search & Candidates", path: "/search-candidates" },
-  { label: "Client Review", path: "/client-review" },
-  { label: "Activity", path: "/activity" },
-];
+const navigation = [{ label: "Inbox", path: "/" }, { label: "Campaigns", path: "/campaigns/campaign-cycling-camera" }, { label: "Runs", path: "/runs" }];
 
 function Workspace() {
-  const { state, dispatch } = useCampaign();
-  return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <div className="wordmark">
-          <span className="mark">CM</span>
-          <div><strong>Creator Mix</strong><small>Planning system</small></div>
-        </div>
-        <nav aria-label="Campaign workspace">
-          {navigation.map((item, index) => (
-            <NavLink key={item.path} to={item.path} end={item.path === "/"}>
-              <span>{String(index + 1).padStart(2, "0")}</span>{item.label}
-            </NavLink>
-          ))}
-        </nav>
-        <div className="sidebar-note">
-          <span className="pulse" />
-          <div><strong>Internal workspace</strong><small>All figures in USD</small></div>
-        </div>
-      </aside>
-      <main className="workspace">
-        <header className="campaign-header">
-          <div>
-            <p className="eyebrow">CYCLING CAMERA CAMPAIGN · BRIEF {state.brief.status === "Published" ? `V${state.brief.version}` : "DRAFT"}</p>
-            <h1>Cycling Camera Launch <span>· US / UK</span></h1>
-          </div>
-          <div className="header-meta">
-            <span><small>Deadline</small>8 weeks</span>
-            <span><small>Budget</small>$180K</span>
-            <button type="button" className="ghost-button" onClick={() => { if (window.confirm("Reset the complete demo to its deterministic starting state?")) { resetState(); dispatch({ type: "RESET" }); } }}>Reset demo</button>
-          </div>
-        </header>
-        <Routes>
-          <Route path="/" element={<OverviewPage />} />
-          <Route path="/brief" element={<BriefPage />} />
-          <Route path="/mix-planner" element={<MixPlannerPage />} />
-          <Route path="/search-candidates" element={<SearchCandidatesPage />} />
-          <Route path="/client-review" element={<ClientReviewPage />} />
-          <Route path="/activity" element={<ActivityPage />} />
-        </Routes>
-      </main>
-    </div>
-  );
+  const { dispatch } = useCampaign();
+  return <div className="agent-shell">
+    <aside className="global-rail">
+      <div className="wordmark"><span className="mark">GS</span><div><strong>Campaign OS</strong><small>Agent workspace</small></div></div>
+      <nav aria-label="Work navigation">{navigation.map((item, index) => <NavLink key={item.path} to={item.path} end={item.path === "/"}><span>{String(index + 1).padStart(2, "0")}</span>{item.label}</NavLink>)}</nav>
+      <button type="button" className="reset-link" onClick={() => { if (window.confirm("Reset the complete Agent demo?")) { resetState(); dispatch({ type: "RESET" }); } }}>↺ Reset demo</button>
+      <div className="sidebar-note"><span className="pulse" /><div><strong>Deterministic Agent</strong><small>No online model</small></div></div>
+    </aside>
+    <main className="agent-workspace"><Routes><Route path="/" element={<InboxPage />} /><Route path="/campaigns/:campaignId" element={<CampaignDeskPage />} /><Route path="/campaigns/:campaignId/runs/:runId" element={<CampaignDeskPage />} /><Route path="/runs" element={<RunsPage />} /></Routes></main>
+  </div>;
 }
 
 export function App() { return <CampaignProvider><Workspace /></CampaignProvider>; }

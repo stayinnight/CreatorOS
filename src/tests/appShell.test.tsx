@@ -12,6 +12,7 @@ describe("App shell", () => {
     );
     expect(html).toContain("Cycling Camera Launch");
     expect(html).toContain("US / UK");
-    expect(html).toContain("Mix Planner");
+    expect(html).toContain("Campaign OS");
+    expect(html).toContain("What needs your");
   });
 });
