@@ -9,6 +9,9 @@ import { ProgressCard } from "./ProgressCard";
 import { getActionLifecycle, getRecommendedNextAction, type RecommendedActionId } from "../../agent/recommendedAction";
 import { executeRecommendedAction } from "../../agent/executeRecommendedAction";
 import { useNavigate } from "react-router-dom";
+import { AgentTurnTrace } from "./AgentTurnTrace";
+import { TypewriterAnswer } from "./TypewriterAnswer";
+import type { AgentTurnController } from "./useAgentTurn";
 
 const legacyActionIds: Record<string, RecommendedActionId> = {
   "generate-mix": "build-mix",
@@ -16,7 +19,7 @@ const legacyActionIds: Record<string, RecommendedActionId> = {
   "publish-review": "preview-client",
 };
 
-export function AgentTimeline({ onOpenArtifact = (artifactId) => undefined, openingArtifactId = null }: { onOpenArtifact?: (artifactId: string) => void; openingArtifactId?: string | null }) {
+export function AgentTimeline({ onOpenArtifact = (artifactId) => undefined, openingArtifactId = null, turn }: { onOpenArtifact?: (artifactId: string) => void; openingArtifactId?: string | null; turn?: AgentTurnController }) {
   const { state, dispatch } = useCampaign();
   const navigate = useNavigate();
   const recommendation = getRecommendedNextAction(state);
@@ -73,6 +76,7 @@ export function AgentTimeline({ onOpenArtifact = (artifactId) => undefined, open
       const completed = steps.filter((item) => item.status === "Succeeded" || item.status === "Skipped").length;
       return <ProgressCard key={message.id} current={recommendation?.stage ?? "Run complete"} completed={completed} total={steps.length} nextLabel={recommendation?.label ?? null} />;
     }
-    return <div className={`chat-message ${message.role.toLowerCase()}`} key={message.id}>{message.text}</div>;
-  })}</div>;
+    const answerTurn = state.agent.turns.find((item) => item.answerMessageId === message.id);
+    return <div className={`chat-message ${message.role.toLowerCase()}`} key={message.id}>{message.role === "Agent" ? <TypewriterAnswer text={message.text} active={Boolean(answerTurn && turn?.revealingTurnId === answerTurn.id)} /> : message.text}</div>;
+  })}{turn?.activeTurn && turn.activeTurn.phase !== "Completed" && <AgentTurnTrace phase={turn.activeTurn.phase} understanding={turn.activeTurn.plan.understanding} steps={turn.activeTurn.plan.steps} completedStepCount={turn.activeTurn.completedStepCount} />}{!turn?.activeTurn && state.agent.turns.length > 0 && (() => { const completed = state.agent.turns.at(-1)!; return <AgentTurnTrace phase="Completed" understanding={completed.understanding} steps={completed.steps} completedStepCount={completed.steps.length} />; })()}</div>;
 }
