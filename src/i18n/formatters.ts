@@ -10,6 +10,7 @@ const chinese: Record<string, string> = {
   Succeeded: "成功", Skipped: "已跳过", Approved: "已批准", Submitted: "已提交", Qualified: "合格", "Needs Review": "需要复核",
   Disqualified: "不合格", Pass: "跳过", Select: "选择", Maybe: "待定", Unreviewed: "未审核", Primary: "主选", Backup: "备选",
   Unassigned: "未分配", Accepted: "接受", Rejected: "拒绝", NeedsFollowUp: "需要跟进", Review: "复核", Fail: "失败", High: "高", Medium: "中", Low: "低",
+  "No real cycling": "没有真实骑行", "Too commercial": "商业感过强", "Not enough POV evidence": "第一视角证据不足", "Audience mismatch": "受众不匹配", "Quote too high": "报价过高",
 };
 
 const domainChinese: Record<string, string> = {

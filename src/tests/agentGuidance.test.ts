@@ -5,6 +5,7 @@ import { renderToString } from "react-dom/server";
 import { createElement } from "react";
 import { NextActionCard } from "../components/agent/NextActionCard";
 import { ProgressCard } from "../components/agent/ProgressCard";
+import { LanguageProvider } from "../i18n/LanguageProvider";
 
 function reachPackages() {
   let state = structuredClone(campaignSeed);
@@ -44,14 +45,14 @@ describe("Agent workflow guidance", () => {
   });
 
   it("renders progress with the next executable action", () => {
-    const html = renderToString(createElement(ProgressCard, { current: "Packages ready", completed: 4, total: 9, nextLabel: "Start calibration" }));
+    const html = renderToString(createElement(LanguageProvider, null, createElement(ProgressCard, { current: "Packages ready", completed: 4, total: 9, nextLabel: "Start calibration" })));
     expect(html).toContain("4 / 9");
     expect(html).toContain("Start calibration");
   });
 
   it("removes controls from retired next actions", () => {
     const message = reachPackages().agent.messages.find((item) => item.type === "NextAction")!;
-    const html = renderToString(createElement(NextActionCard, { message, lifecycle: "Superseded", actionLabel: "Continue", onAction: () => undefined }));
+    const html = renderToString(createElement(LanguageProvider, null, createElement(NextActionCard, { message, lifecycle: "Superseded", actionLabel: "Continue", onAction: () => undefined })));
     expect(html).toContain("Superseded");
     expect(html).not.toContain("<button");
   });

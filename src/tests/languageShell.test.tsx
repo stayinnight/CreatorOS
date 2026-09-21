@@ -27,5 +27,19 @@ describe("bilingual application shell", () => {
     expect(container.textContent).toContain("重置演示");
     expect(container.textContent).toContain("需要你处理的事项");
     expect(window.location.pathname).toBe("/");
+    const runs = container.querySelector('a[href="/runs"]') as HTMLAnchorElement;
+    act(() => runs.click());
+    expect(container.textContent).toContain("运行记录，而不是聊天历史");
+  });
+
+  it("switches Agent-owned campaign content while preserving proper nouns", () => {
+    act(() => root.render(<MemoryRouter initialEntries={["/campaigns/campaign-cycling-camera"]}><App /></MemoryRouter>));
+    expect(container.textContent).toContain("Give me the client materials");
+    expect(container.textContent).toContain("Analyze 3 materials");
+    expect(container.textContent).toContain("Cycling Camera Launch");
+    act(() => (container.querySelector('button[aria-label="切换到中文"]') as HTMLButtonElement).click());
+    expect(container.textContent).toContain("把客户材料交给我");
+    expect(container.textContent).toContain("分析 3 份材料");
+    expect(container.textContent).toContain("Cycling Camera Launch");
   });
 });
