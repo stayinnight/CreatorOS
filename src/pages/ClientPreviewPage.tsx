@@ -1,0 +1,10 @@
+import { Link } from "react-router-dom";
+import { useCampaign } from "../app/CampaignProvider";
+import { toClientCandidate } from "../domain/review";
+
+export function ClientPreviewPage() {
+  const { state } = useCampaign();
+  const candidateIds = state.reviewRound?.candidateIds ?? state.candidates.filter((candidate) => candidate.role === "Primary").slice(0, 30).map((candidate) => candidate.id);
+  const candidates = candidateIds.map((id) => state.candidates.find((candidate) => candidate.id === id)).filter((candidate) => candidate !== undefined).map(toClientCandidate);
+  return <div className="client-preview-page"><header className="client-preview-head"><div><span>CLIENT PROJECTION · SAFE VIEW</span><h1>Cycling Camera<br />Creator Review</h1><p>US / UK · First-person riding proof · Round 01</p></div><Link to={`/campaigns/${state.id}`}>← Back to Agent Desk</Link></header><div className="projection-banner"><strong>{candidates.length || 30} client candidates</strong><span>Internal scores, notes and backup strategy are excluded by projection.</span></div><section className="client-preview-grid">{candidates.length ? candidates.map((candidate) => <article key={candidate.id}><header><span>{candidate.market} · {candidate.ridingScenario}</span><strong>{candidate.creatorName}</strong><small>{candidate.handle} · {candidate.platform}</small></header><div className="preview-evidence"><span>VERIFIED RIDING EVIDENCE</span><strong>{candidate.evidence[0]?.views.toLocaleString() ?? "—"} relevant views</strong><small>{candidate.evidence[0]?.proofPoints.slice(0, 3).join(" · ")}</small></div><dl><div><dt>Deliverable</dt><dd>{candidate.deliverables}</dd></div><div><dt>Quote range</dt><dd>{candidate.quoteRange}</dd></div><div><dt>Rights</dt><dd>{candidate.rightsSummary}</dd></div><div><dt>Forecast</dt><dd>{candidate.forecastViews.toLocaleString()}</dd></div></dl></article>) : <div className="client-preview-empty">Prepare and publish the review from the Agent Desk to populate this projection.</div>}</section></div>;
+}

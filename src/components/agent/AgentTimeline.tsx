@@ -32,7 +32,14 @@ export function AgentTimeline() {
       const step = state.agent.steps.find((item) => item.id === message.payloadRef);
       return <ExceptionCard key={message.id} message={message} step={step} onRetry={() => message.payloadRef && dispatch({ type: "RETRY_AGENT_STEP", stepId: message.payloadRef })} />;
     }
-    if (message.type === "NextAction") return <NextActionCard key={message.id} message={message} onAction={message.payloadRef === "generate-mix" ? () => dispatch({ type: "GENERATE_MIX_OPTIONS" }) : message.payloadRef === "compare-mix" ? () => dispatch({ type: "OPEN_ARTIFACT", artifactId: "artifact-mix-draft" }) : undefined} />;
+    if (message.type === "NextAction") {
+      const onAction = message.payloadRef === "generate-mix" ? () => dispatch({ type: "GENERATE_MIX_OPTIONS" })
+        : message.payloadRef === "compare-mix" ? () => dispatch({ type: "OPEN_ARTIFACT", artifactId: "artifact-mix-draft" })
+          : message.payloadRef === "prepare-review" ? () => dispatch({ type: "PREPARE_REVIEW" })
+            : message.payloadRef === "publish-review" ? () => dispatch({ type: "PUBLISH_REVIEW" }) : undefined;
+      const label = message.payloadRef === "generate-mix" ? "Build mix options" : message.payloadRef === "compare-mix" ? "Open comparison" : message.payloadRef === "prepare-review" ? "Validate slate" : message.payloadRef === "publish-review" ? "Publish Round 1" : undefined;
+      return <NextActionCard key={message.id} message={message} onAction={onAction} actionLabel={label} previewHref={message.payloadRef === "publish-review" ? `/campaigns/${state.id}/client-preview` : undefined} />;
+    }
     return <div className={`chat-message ${message.role.toLowerCase()}`} key={message.id}>{message.text}</div>;
   })}</div>;
 }

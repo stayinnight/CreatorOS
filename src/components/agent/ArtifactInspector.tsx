@@ -8,12 +8,14 @@ import { MetricCard } from "../MetricCard";
 import { evaluateMatrix, summarizeMatrix } from "../../domain/matrix";
 import type { MatrixRow } from "../../domain/model";
 import { CandidateBatchDetail } from "./CandidateBatchDetail";
+import { ReviewRoundDetail } from "./ReviewRoundDetail";
+import { GapArtifactDetail } from "./GapArtifactDetail";
 
 const money = (value: number) => `$${Math.round(value / 1000)}K`;
 
 export function ArtifactInspector({ artifact }: { artifact: CampaignArtifact }) {
   const { dispatch } = useCampaign();
-  return <aside className="artifact-inspector"><header className="inspector-head"><div><span>{artifact.kind.toUpperCase()} · VERSION {artifact.version}</span><h2>{artifact.summary}</h2></div><button type="button" aria-label="Close artifact" onClick={() => dispatch({ type: "CLOSE_ARTIFACT" })}>×</button></header>{artifact.kind === "Brief" ? <BriefArtifactDetail /> : artifact.kind === "Mix" ? <MixArtifactDetail scenarioId={artifact.domainRef} /> : artifact.kind === "SearchPackageSet" ? <SearchPackageSetDetail /> : artifact.kind === "CandidateBatch" ? <CandidateBatchDetail artifact={artifact} /> : <div className="inspector-placeholder"><strong>{artifact.kind} detail</strong><p>This artifact will become interactive at its workflow stage.</p></div>}</aside>;
+  return <aside className="artifact-inspector"><header className="inspector-head"><div><span>{artifact.kind.toUpperCase()} · VERSION {artifact.version}</span><h2>{artifact.summary}</h2></div><button type="button" aria-label="Close artifact" onClick={() => dispatch({ type: "CLOSE_ARTIFACT" })}>×</button></header>{artifact.kind === "Brief" ? <BriefArtifactDetail /> : artifact.kind === "Mix" ? <MixArtifactDetail scenarioId={artifact.domainRef} /> : artifact.kind === "SearchPackageSet" ? <SearchPackageSetDetail /> : artifact.kind === "CandidateBatch" ? <CandidateBatchDetail artifact={artifact} /> : artifact.kind === "ReviewRound" ? <ReviewRoundDetail /> : artifact.kind === "GapAssessment" ? <GapArtifactDetail /> : <div className="inspector-placeholder"><strong>{artifact.kind} detail</strong></div>}</aside>;
 }
 
 function BriefArtifactDetail() {

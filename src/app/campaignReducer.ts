@@ -9,6 +9,7 @@ import type { CandidateDecision } from "../domain/model";
 import { planMaterialRun, registerArtifact, resolveWorkflowDecision, selectArtifact, startMaterialRun } from "../agent/workflow";
 import { parseAgentIntent } from "../agent/intent";
 import { buildCalibrationBatch, preferenceForReason } from "../agent/calibration";
+import { validateReviewRound } from "../domain/review";
 
 export type CampaignAction =
   | { type: "RESET" }
@@ -37,7 +38,9 @@ export type CampaignAction =
   | { type: "GENERATE_MIX_OPTIONS" }
   | { type: "START_SOURCING" }
   | { type: "REJECT_CALIBRATION_CANDIDATE"; candidateId: string; reason: string }
-  | { type: "APPROVE_CALIBRATION" };
+  | { type: "APPROVE_CALIBRATION" }
+  | { type: "PREPARE_REVIEW" }
+  | { type: "APPLY_SEEDED_CLIENT_FEEDBACK" };
 
 function activity(message: string) {
   return { id: `activity-${message.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}`, at: "2026-09-21T10:00:00+08:00", kind: "Planning", message, status: "Success" as const };
@@ -162,6 +165,27 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
       agent = { ...agent, selectedArtifactId: "artifact-client-slate-v1", steps: agent.steps.map((step) => step.id === "step-calibrate" ? { ...step, status: "Succeeded" as const, summary: "Calibration direction approved", completedAt: "2026-09-21T09:55:00+08:00" } : step.id === "step-publish" ? { ...step, status: "Pending" as const } : step), runs: agent.runs.map((run) => run.id === agent.activeRunId ? { ...run, status: "Running" as const, currentStepId: "step-publish" } : run), messages: [...agent.messages, { id: "message-next-review", runId: agent.activeRunId, role: "Agent", type: "NextAction", text: "Calibration approved. I can validate the 30 + 10 slate and prepare the client review.", payloadRef: "prepare-review", createdAt: "2026-09-21T09:55:30+08:00" }] };
       return { ...state, agent };
     }
+    case "PREPARE_REVIEW": {
+      const packageByCell = new Map(state.searchPackages.map((item) => [item.matrixCellId, item]));
+      const qualifications = Object.fromEntries(state.candidates.map((candidate) => { const searchPackage = packageByCell.get(candidate.matrixCellId); return [candidate.id, searchPackage ? qualifyCandidate(candidate, searchPackage) : { status: "Needs Review" as const, reasons: ["Search package missing"], risks: [] }]; }));
+      const primaries = state.candidates.filter((candidate) => candidate.role === "Primary").slice(0, 30);
+      const backups = state.candidates.filter((candidate) => candidate.role === "Backup");
+      const validation = validateReviewRound(primaries, backups, qualifications);
+      if (!validation.valid) return { ...state, agent: { ...state.agent, messages: [...state.agent.messages, { id: "message-review-validation", runId: state.agent.activeRunId, role: "Agent", type: "Exception", text: validation.errors.join(" · "), payloadRef: "review-validation", createdAt: "2026-09-21T10:00:00+08:00" }] } };
+      return { ...state, agent: { ...state.agent, runs: state.agent.runs.map((run) => run.id === state.agent.activeRunId ? { ...run, status: "WaitingForApproval" as const, currentStepId: "step-publish" } : run), steps: state.agent.steps.map((step) => step.id === "step-publish" ? { ...step, status: "Waiting" as const, summary: "30 client candidates validated; 10 backups protected" } : step), messages: [...state.agent.messages, { id: "message-publish-approval", runId: state.agent.activeRunId, role: "Agent", type: "NextAction", text: "30 client candidates are projection-safe; 10 backups remain internal. Preview the client view, then approve publication.", payloadRef: "publish-review", createdAt: "2026-09-21T10:00:00+08:00" }] } };
+    }
+    case "APPLY_SEEDED_CLIENT_FEEDBACK": {
+      if (!state.reviewRound) return state;
+      const decisions = Object.fromEntries(state.reviewRound.candidateIds.map((id) => { const candidate = state.candidates.find((item) => item.id === id)!; return [id, candidate.market === "UK" && candidate.ridingScenario === "Urban" ? "Pass" : "Select"]; })) as Record<string, CandidateDecision>;
+      const candidates = state.candidates.map((candidate) => decisions[candidate.id] ? { ...candidate, decision: decisions[candidate.id], clientReason: decisions[candidate.id] === "Pass" ? "Scenario fit" : candidate.clientReason } : candidate);
+      const reviewed = candidates.filter((candidate) => state.reviewRound!.candidateIds.includes(candidate.id));
+      const backups = candidates.filter((candidate) => candidate.role === "Backup");
+      const matrix = state.matrixScenarios.find((scenario) => scenario.id === state.activeScenarioId)!;
+      const gapAssessment = assessGap(matrix, reviewed, backups);
+      let agent = registerArtifact(state.agent, { id: "artifact-gap-round-01", campaignId: state.id, kind: "GapAssessment", version: 1, status: "Ready", sourceRunId: "run-brief-to-shortlist", sourceStepId: "step-gap", parentArtifactIds: ["artifact-review-round-01"], domainRef: gapAssessment.id, summary: `${gapAssessment.missingCells.length} Matrix cell requires local recovery · ${gapAssessment.recommendedAction}`, createdAt: "2026-09-21T10:25:00+08:00" });
+      agent = { ...agent, selectedArtifactId: "artifact-gap-round-01", steps: agent.steps.map((step) => step.id === "step-gap" ? { ...step, status: "Succeeded" as const, summary: "Client feedback mapped to Matrix cells", startedAt: "2026-09-21T10:24:00+08:00", completedAt: "2026-09-21T10:25:00+08:00" } : step.id === "step-recover" ? { ...step, status: "Waiting" as const } : step), runs: agent.runs.map((run) => run.id === agent.activeRunId ? { ...run, status: "WaitingForApproval" as const, currentStepId: "step-recover" } : run), messages: [...agent.messages, { id: "message-next-recovery", runId: agent.activeRunId, role: "Agent", type: "NextAction", text: "Client passes created a UK Urban gap. Promote the qualified backup, then replenish only that search package.", payloadRef: "recover-gap", createdAt: "2026-09-21T10:25:30+08:00" }] };
+      return { ...state, candidates, reviewRound: { ...state.reviewRound, status: "Submitted", submittedAt: "2026-09-21T10:24:00+08:00" }, gapAssessment, agent };
+    }
     case "LOAD_BATCHES": return {
       ...state,
       candidatesLoaded: true,
@@ -175,9 +199,13 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
         return candidate.role === "Primary" && searchPackage && qualifyCandidate(candidate, searchPackage).status === "Qualified";
       });
       if (!state.candidatesLoaded || eligiblePrimaries.length !== state.brief.firstReviewCount) return state;
+      const reviewRound = { id: "review-round-01", status: "Published" as const, candidateIds: eligiblePrimaries.map((item) => item.id), publishedAt: "2026-09-21T11:00:00+08:00", submittedAt: null };
+      let agent = registerArtifact(state.agent, { id: "artifact-review-round-01", campaignId: state.id, kind: "ReviewRound", version: 1, status: "Published", sourceRunId: "run-brief-to-shortlist", sourceStepId: "step-publish", parentArtifactIds: ["artifact-client-slate-v1"], domainRef: reviewRound.id, summary: "Client Review Round 1 published · 30 projection-safe creators", createdAt: "2026-09-21T10:10:00+08:00" });
+      agent = { ...agent, selectedArtifactId: "artifact-review-round-01", steps: agent.steps.map((step) => step.id === "step-publish" ? { ...step, status: "Succeeded" as const, completedAt: "2026-09-21T10:10:00+08:00" } : step.id === "step-gap" ? { ...step, status: "Running" as const, startedAt: "2026-09-21T10:10:00+08:00" } : step), runs: agent.runs.map((run) => run.id === agent.activeRunId ? { ...run, status: "Running" as const, currentStepId: "step-gap" } : run) };
       return {
         ...state,
-        reviewRound: { id: "review-round-01", status: "Published", candidateIds: eligiblePrimaries.map((item) => item.id), publishedAt: "2026-09-21T11:00:00+08:00", submittedAt: null },
+        agent,
+        reviewRound,
         activity: [...state.activity, activity("Client Review Round 1 published · 30 creators")],
       };
     }
@@ -210,8 +238,10 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
       const candidates = state.candidates.map((candidate) => candidate.id === action.candidateId ? { ...candidate, role: "Primary" as const, decision: "Select" as const } : candidate);
       const remainingCells = state.gapAssessment.missingCells.flatMap((cell) => cell.matrixCellId !== promoted.matrixCellId ? [cell] : cell.missingCreators > 1 ? [{ ...cell, missingCreators: cell.missingCreators - 1 }] : []);
       const nextCell = remainingCells[0];
+      const agent = { ...state.agent, messages: [...state.agent.messages, { id: `message-promote-${promoted.id}`, runId: state.agent.activeRunId, role: "Agent" as const, type: "Text" as const, text: `${promoted.creatorName} promoted into the affected Matrix cell. The Brief and locked Mix remain unchanged.`, payloadRef: promoted.id, createdAt: "2026-09-21T10:28:00+08:00" }] };
       return {
         ...state,
+        agent,
         candidates,
         gapAssessment: { ...state.gapAssessment, missingCells: remainingCells, recommendedAction: remainingCells.length ? "Replenish" : "Replenish", packageId: nextCell ? `pkg-${nextCell.matrixCellId}` : state.gapAssessment.packageId, backupCandidateId: null },
         activity: [...state.activity, activity(`${promoted.creatorName} promoted from backup`) ],
@@ -221,7 +251,8 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
       const parent = state.searchPackages.find((item) => item.id === action.packageId);
       if (!parent) return state;
       const replenishment = { ...parent, id: `${parent.id}-replenishment-01`, status: "Ready" as const, parentPackageId: parent.id, dueAt: "2026-10-01" };
-      return { ...state, searchPackages: [...state.searchPackages, replenishment], activity: [...state.activity, activity(`Replenishment package created · ${parent.market} ${parent.ridingScenario}`)] };
+      const agent = { ...state.agent, steps: state.agent.steps.map((step) => step.id === "step-recover" ? { ...step, status: "Succeeded" as const, summary: `Replenished ${parent.market} ${parent.ridingScenario} only`, completedAt: "2026-09-21T10:30:00+08:00" } : step), runs: state.agent.runs.map((run) => run.id === state.agent.activeRunId ? { ...run, status: "Completed" as const, currentStepId: null, completedAt: "2026-09-21T10:30:00+08:00" } : run), messages: [...state.agent.messages, { id: "message-run-complete", runId: state.agent.activeRunId, role: "Agent" as const, type: "Text" as const, text: `Local recovery complete for ${parent.market} ${parent.ridingScenario}. Campaign workflow is complete; upstream artifacts were preserved.`, payloadRef: replenishment.id, createdAt: "2026-09-21T10:30:00+08:00" }] };
+      return { ...state, agent, searchPackages: [...state.searchPackages, replenishment], activity: [...state.activity, activity(`Replenishment package created · ${parent.market} ${parent.ridingScenario}`)] };
     }
   }
 }
