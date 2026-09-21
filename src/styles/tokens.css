@@ -11,4 +11,10 @@
   --text-meta: 12px;
   --font-display: Georgia, "Times New Roman", serif;
   --font-work: "Helvetica Neue", Arial, sans-serif;
+  --radius-surface: 12px;
+  --radius-control: 9px;
+  --radius-compact: 6px;
+  --shadow-rest: 0 8px 24px rgba(10, 10, 10, .06);
+  --shadow-hover: 0 12px 30px rgba(10, 10, 10, .1);
+  --motion-standard: cubic-bezier(.2, .8, .2, 1);
 }

@@ -313,4 +313,68 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .monochrome-editorial .exception-card, .monochrome-editorial .gap-detail article, .monochrome-editorial .gap-panel, .monochrome-editorial .conflict-card, .monochrome-editorial .feedback-label { border-color: var(--black); background: var(--gray-100); color: var(--black); }
 .monochrome-editorial .exception-card > span, .monochrome-editorial .gap-detail article span, .monochrome-editorial .feedback-label { color: var(--black); }
 .monochrome-editorial .metric-card.pass, .monochrome-editorial .metric-card.fail { border-top-color: var(--black); }
+.monochrome-editorial .campaign-inbox-card,
+.monochrome-editorial .agent-card,
+.monochrome-editorial .context-artifact,
+.monochrome-editorial .context-decision,
+.monochrome-editorial .inspector-kpis .metric-card,
+.monochrome-editorial .panel,
+.monochrome-editorial .inspector-section,
+.monochrome-editorial .inspector-approval { border-radius: var(--radius-surface); box-shadow: var(--shadow-rest); }
+.monochrome-editorial .global-rail nav a,
+.monochrome-editorial .queue-row,
+.monochrome-editorial .rail-campaign,
+.monochrome-editorial .decision-options button,
+.monochrome-editorial .intent-chips button,
+.monochrome-editorial .agent-composer,
+.monochrome-editorial .agent-composer button,
+.monochrome-editorial .material-composer > button,
+.monochrome-editorial .primary-inline,
+.monochrome-editorial .ghost-button,
+.monochrome-editorial .next-action-buttons a,
+.monochrome-editorial .next-action-buttons button { border-radius: var(--radius-control); }
+.monochrome-editorial .campaign-monogram,
+.monochrome-editorial .artifact-glyph,
+.monochrome-editorial .context-artifact i,
+.monochrome-editorial .source-icon,
+.monochrome-editorial .status-badge,
+.monochrome-editorial .constraint-icon { border-radius: var(--radius-compact); }
+.monochrome-editorial .chat-message.agent,
+.monochrome-editorial .agent-timeline > .chat-message.user,
+.monochrome-editorial .pending-user-message { border-radius: var(--radius-surface); }
+.monochrome-editorial .agent-card:hover,
+.monochrome-editorial .context-artifact:hover { box-shadow: var(--shadow-hover); }
+.artifact-inspector { border-radius: var(--radius-surface) 0 0 var(--radius-surface); box-shadow: -10px 0 32px rgba(10, 10, 10, .06); }
+.inspector-head { border-radius: var(--radius-surface) 0 0 0; }
+.recommended-next-step { position: sticky; top: 94px; z-index: 2; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 20px; align-items: center; margin: 16px 20px 0; padding: 18px 20px; border: 1px solid var(--black); border-radius: var(--radius-surface); background: rgba(255,255,255,.96); box-shadow: var(--shadow-rest); backdrop-filter: blur(12px); }
+.recommended-next-copy > span { display: block; margin-bottom: 7px; color: var(--gray-700); font: 700 var(--text-meta) ui-monospace, monospace; letter-spacing: .08em; text-transform: uppercase; }
+.recommended-next-copy h3 { margin: 0 0 7px; font-family: var(--font-display); font-size: 22px; font-weight: 500; letter-spacing: -.03em; }
+.recommended-next-copy p { margin: 0; color: var(--ink); font-size: var(--text-control); }
+.recommended-next-copy small { display: block; margin-top: 5px; color: var(--gray-500); font-size: var(--text-meta); }
+.recommended-next-step > button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 11px 16px; border: 1px solid var(--black); border-radius: var(--radius-control); background: var(--black); color: var(--white); font-size: var(--text-control); font-weight: 750; box-shadow: 0 5px 14px rgba(10,10,10,.14); }
+.recommended-next-step > button:hover:not(:disabled) { box-shadow: var(--shadow-hover); }
+.recommended-next-step .working-mark { border-color: var(--white); border-top-color: transparent; }
+.next-action-card { border-radius: var(--radius-surface); background: var(--black); color: var(--white); box-shadow: var(--shadow-rest); }
+.next-action-card > span { color: #d9d9d9; }
+.next-action-buttons button { display: inline-flex; align-items: center; gap: 8px; background: var(--white); color: var(--black); }
+.next-action-buttons button .working-mark { border-color: var(--black); border-top-color: transparent; }
+.next-action-card.is-retired { grid-template-columns: 1fr; border-color: var(--gray-300); background: var(--gray-100); color: var(--gray-700); box-shadow: none; }
+.next-action-card.is-retired > span { color: var(--gray-500); }
+.progress-card { padding: 20px; }
+.progress-card header { display: flex; align-items: baseline; justify-content: space-between; gap: 20px; }
+.progress-summary { display: flex; align-items: baseline; gap: 8px; margin-top: 18px; }
+.progress-summary strong { font-family: var(--font-display); font-size: 28px; font-weight: 500; }
+.progress-summary span, .progress-card p { color: var(--gray-500); font-size: var(--text-meta); }
+.progress-track { height: 7px; margin: 10px 0 14px; overflow: hidden; border-radius: var(--radius-compact); background: var(--gray-100); }
+.progress-track i { display: block; height: 100%; border-radius: inherit; background: var(--black); }
+.progress-card p { margin: 0; }.progress-card p strong { color: var(--black); }
+.inspector-skeleton { display: grid; gap: 14px; padding: 28px 24px; }
+.inspector-skeleton i { display: block; height: 76px; border-radius: var(--radius-surface); background: linear-gradient(100deg, var(--gray-100) 20%, #e2e2e2 40%, var(--gray-100) 60%); background-size: 240% 100%; }
+.inspector-skeleton i:first-child { width: 58%; height: 34px; }
+.inspector-skeleton i:nth-child(2) { height: 120px; }
+.inspector-skeleton i:nth-child(3) { width: 86%; }
+.inspector-skeleton i:nth-child(4) { height: 210px; }
+.inspector-content:focus, .inspector-head h2:focus { outline: none; }
+.inspector-head h2:focus-visible { outline: 2px solid var(--black); outline-offset: 4px; border-radius: var(--radius-compact); }
+@media (max-width: 760px) { .recommended-next-step { position: relative; top: auto; grid-template-columns: 1fr; }.recommended-next-step > button { width: 100%; } }
 .client-preview-page { min-height: 100vh; padding: 0 46px 60px; background: #f4f2ec; }.client-preview-head { min-height: 260px; display: flex; justify-content: space-between; align-items: flex-end; gap: 40px; padding: 45px 0 32px; border-bottom: 1px solid #c9c5ba; }.client-preview-head span { color: var(--blue); font: 800 9px ui-monospace, monospace; letter-spacing: .12em; }.client-preview-head h1 { margin: 9px 0; font-size: clamp(42px, 5vw, 70px); line-height: .9; letter-spacing: -.07em; }.client-preview-head p { color: var(--muted); font-size: 11px; }.client-preview-head a { margin-bottom: 6px; color: var(--blue); font-size: 10px; font-weight: 800; text-decoration: none; }.projection-banner { display: flex; justify-content: space-between; margin: 20px 0 10px; padding: 13px 16px; border-radius: 8px; background: var(--ink); color: white; font-size: 10px; }.projection-banner span { color: #aab4b6; }.client-preview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }.client-preview-grid > article { padding: 16px; border: 1px solid var(--line); border-radius: 9px; background: white; }.client-preview-grid article header span, .client-preview-grid article header strong, .client-preview-grid article header small { display: block; }.client-preview-grid article header span { color: var(--blue); font: 800 7px ui-monospace, monospace; }.client-preview-grid article header strong { margin-top: 7px; font-size: 13px; }.client-preview-grid article header small { margin-top: 3px; color: var(--muted); font-size: 8px; }.preview-evidence { margin: 13px 0; padding: 10px; border-radius: 7px; background: #edf3ee; }.preview-evidence span, .preview-evidence strong, .preview-evidence small { display: block; }.preview-evidence span { color: var(--green); font: 800 7px ui-monospace, monospace; }.preview-evidence strong { margin-top: 6px; font-size: 10px; }.preview-evidence small { margin-top: 4px; color: var(--muted); font-size: 7px; }.client-preview-grid dl { margin: 0; }.client-preview-grid dl div { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--line); font-size: 8px; }.client-preview-grid dd { margin: 0; max-width: 62%; text-align: right; font-weight: 700; }.client-preview-grid dt { color: var(--muted); }.client-preview-empty { grid-column: 1 / -1; padding: 60px; border: 1px dashed var(--line); color: var(--muted); text-align: center; }
