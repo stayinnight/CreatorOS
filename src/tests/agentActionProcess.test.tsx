@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CampaignProvider } from "../app/CampaignProvider";
 import { AgentComposer } from "../components/agent/AgentComposer";
 import type { AgentTurnController } from "../components/agent/useAgentTurn";
+import { LanguageProvider } from "../i18n/LanguageProvider";
 
 describe("agent action process coverage", () => {
   let container: HTMLDivElement;
@@ -22,7 +23,7 @@ describe("agent action process coverage", () => {
   it("routes Analyze 3 materials through the staged action controller", () => {
     const performAction = vi.fn();
     const turn = { activeTurn: null, revealingTurnId: null, submit: vi.fn(), performAction, busy: false } as unknown as AgentTurnController;
-    act(() => root.render(<CampaignProvider><AgentComposer turn={turn} /></CampaignProvider>));
+    act(() => root.render(<LanguageProvider><CampaignProvider><AgentComposer turn={turn} /></CampaignProvider></LanguageProvider>));
     act(() => (container.querySelector(".material-composer > button") as HTMLButtonElement).click());
     expect(performAction).toHaveBeenCalledWith({ type: "LOAD_DEMO_MATERIALS" });
   });

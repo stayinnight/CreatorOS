@@ -7,7 +7,7 @@ describe("agent workspace seed", () => {
     expect(campaignSeed.agent.runs).toEqual([]);
     expect(campaignSeed.agent.artifacts).toEqual([]);
     expect(campaignSeed.agent.messages).toEqual([
-      expect.objectContaining({ type: "Text", role: "Agent", text: expect.stringContaining("客户材料") }),
+      expect.objectContaining({ type: "Text", role: "Agent", text: expect.stringContaining("client materials"), messageKey: "agent.welcome" }),
     ]);
     expect(campaignSeed.agent.availableSources).toHaveLength(3);
   });

@@ -12,6 +12,8 @@ import { useNavigate } from "react-router-dom";
 import { AgentTurnTrace } from "./AgentTurnTrace";
 import { TypewriterAnswer } from "./TypewriterAnswer";
 import type { AgentTurnController } from "./useAgentTurn";
+import { useLanguage } from "../../i18n/LanguageProvider";
+import { localizeAgentMessage } from "../../i18n/agentCopy";
 
 const legacyActionIds: Record<string, RecommendedActionId> = {
   "generate-mix": "build-mix",
@@ -21,6 +23,7 @@ const legacyActionIds: Record<string, RecommendedActionId> = {
 
 export function AgentTimeline({ onOpenArtifact = (artifactId) => undefined, openingArtifactId = null, turn }: { onOpenArtifact?: (artifactId: string) => void; openingArtifactId?: string | null; turn?: AgentTurnController }) {
   const { state, dispatch } = useCampaign();
+  const { locale } = useLanguage();
   const navigate = useNavigate();
   const perform = (action: Parameters<typeof dispatch>[0]) => turn ? turn.performAction(action) : dispatch(action);
   const recommendation = getRecommendedNextAction(state);
@@ -69,7 +72,7 @@ export function AgentTimeline({ onOpenArtifact = (artifactId) => undefined, open
       const label = recommendedAction?.label ?? (message.payloadRef === "generate-mix" ? "Build mix options" : message.payloadRef === "compare-mix" ? "Open comparison" : message.payloadRef === "prepare-review" ? "Validate slate" : message.payloadRef === "publish-review" ? "Publish Round 1" : undefined);
       const previewHref = recommendedAction?.command.kind === "navigate" ? recommendedAction.command.to : message.payloadRef === "publish-review" ? `/campaigns/${state.id}/client-preview` : undefined;
       const targetArtifactId = recommendedAction?.command.kind === "open" ? recommendedAction.command.artifactId : message.payloadRef === "compare-mix" ? "artifact-mix-draft" : null;
-      return <NextActionCard key={message.id} message={message} lifecycle={lifecycle} onAction={onAction} actionLabel={label} previewHref={previewHref} busy={Boolean(targetArtifactId && openingArtifactId === targetArtifactId)} />;
+      return <NextActionCard key={message.id} message={{ ...message, text: localizeAgentMessage(locale, message) }} lifecycle={lifecycle} onAction={onAction} actionLabel={label} previewHref={previewHref} busy={Boolean(targetArtifactId && openingArtifactId === targetArtifactId)} />;
     }
     if (message.type === "Progress") {
       const run = state.agent.runs.find((item) => item.id === state.agent.activeRunId);
@@ -78,6 +81,7 @@ export function AgentTimeline({ onOpenArtifact = (artifactId) => undefined, open
       return <ProgressCard key={message.id} current={recommendation?.stage ?? "Run complete"} completed={completed} total={steps.length} nextLabel={recommendation?.label ?? null} />;
     }
     const answerTurn = state.agent.turns.find((item) => item.answerMessageId === message.id);
-    return <div className={`chat-message ${message.role.toLowerCase()}`} key={message.id}>{message.role === "Agent" ? <TypewriterAnswer text={message.text} active={Boolean(answerTurn && turn?.revealingTurnId === answerTurn.id)} /> : message.text}</div>;
+    const localizedText = localizeAgentMessage(locale, message);
+    return <div className={`chat-message ${message.role.toLowerCase()}`} key={message.id}>{message.role === "Agent" ? <TypewriterAnswer text={localizedText} active={Boolean(answerTurn && turn?.revealingTurnId === answerTurn.id)} /> : localizedText}</div>;
   })}{turn?.activeTurn && turn.activeTurn.phase !== "Completed" && <AgentTurnTrace phase={turn.activeTurn.phase} understanding={turn.activeTurn.plan.understanding} steps={turn.activeTurn.plan.steps} completedStepCount={turn.activeTurn.completedStepCount} />}{!turn?.activeTurn && state.agent.turns.length > 0 && (() => { const completed = state.agent.turns.at(-1)!; return <AgentTurnTrace phase="Completed" understanding={completed.understanding} steps={completed.steps} completedStepCount={completed.steps.length} />; })()}</div>;
 }

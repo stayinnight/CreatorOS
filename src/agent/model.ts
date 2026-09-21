@@ -41,6 +41,8 @@ export interface AgentMessage {
   text: string;
   payloadRef: string | null;
   createdAt: string;
+  messageKey?: TranslationKey;
+  messageParams?: TranslationParams;
 }
 
 export interface DecisionOption {
@@ -126,3 +128,4 @@ export interface AgentWorkspaceState {
   approvedBackupIds: string[];
   turns: AgentTurnRecord[];
 }
+import type { TranslationKey, TranslationParams } from "../i18n/messages";

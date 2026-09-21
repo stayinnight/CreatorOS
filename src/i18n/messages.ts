@@ -36,6 +36,16 @@ export const en = {
   "inbox.atRisk": "At risk",
   "inbox.noCampaigns": "No campaigns",
   "inbox.runStatus": "Agent run is {status}.",
+  "agent.slate.ready": "Client slate ready: {primaryCount} primaries and {backupCount} internal backups",
+  "agent.phase.thinking": "Thinking · Understanding task",
+  "agent.phase.action": "Action · Calling tools",
+  "agent.phase.answer": "Answer · Organizing result",
+  "agent.phase.completed": "Analysis completed with {count} workspace checks · View process",
+  "agent.welcome": "Give me the client materials. I’ll analyze the email, budget sheet, and meeting notes, then pause at high-impact conflicts.",
+  "agent.analyzeMaterials": "Analyze 3 materials", "agent.ready": "Ready", "agent.working": "Agent is working…", "agent.ask": "Ask the Campaign Agent…", "agent.messageLabel": "Agent message", "agent.send": "Send",
+  "agent.action.analyze": "Analyze 3 materials", "agent.action.brief-only": "Brief only first", "agent.action.open-brief": "Open Brief v1", "agent.action.continue": "Continue full plan", "agent.action.recommend": "Use recommendation", "agent.action.sources": "View sources", "agent.action.status": "Current status", "agent.action.explain": "Why this creator", "agent.action.similar": "Find a similar lifestyle fit", "agent.action.next": "Next step", "agent.action.budget": "View budget",
+  "desk.eyebrow": "CAMPAIGN AGENT DESK", "desk.ready": "Ready to start", "desk.timeline": "Agent timeline", "desk.latest": "Jump to latest ↓",
+  "rail.queues": "WORK QUEUES", "rail.waiting": "Waiting for you", "rail.running": "Agent running", "rail.risk": "At risk", "rail.campaigns": "ACTIVE CAMPAIGNS",
 } as const;
 
 export type TranslationKey = keyof typeof en;
@@ -75,6 +85,16 @@ const zhCN: Record<TranslationKey, string> = {
   "inbox.atRisk": "存在风险",
   "inbox.noCampaigns": "暂无项目",
   "inbox.runStatus": "Agent 当前状态：{status}。",
+  "agent.slate.ready": "客户名单已就绪：{primaryCount} 位主选，{backupCount} 位内部备选",
+  "agent.phase.thinking": "思考 · 正在理解任务",
+  "agent.phase.action": "行动 · 正在调用工具",
+  "agent.phase.answer": "回答 · 正在组织结果",
+  "agent.phase.completed": "已通过 {count} 项工作区检查完成分析 · 查看过程",
+  "agent.welcome": "把客户材料交给我。我会先分析邮件、预算表和会议纪要，再在高影响冲突处暂停。",
+  "agent.analyzeMaterials": "分析 3 份材料", "agent.ready": "就绪", "agent.working": "Agent 正在工作…", "agent.ask": "询问 Campaign Agent…", "agent.messageLabel": "Agent 消息", "agent.send": "发送",
+  "agent.action.analyze": "分析 3 份材料", "agent.action.brief-only": "先只整理 Brief", "agent.action.open-brief": "打开 Brief v1", "agent.action.continue": "继续完整计划", "agent.action.recommend": "采用建议", "agent.action.sources": "查看来源", "agent.action.status": "当前进度", "agent.action.explain": "为什么推荐他", "agent.action.similar": "找相似但更生活化的人", "agent.action.next": "下一步", "agent.action.budget": "查看预算",
+  "desk.eyebrow": "项目 Agent 工作台", "desk.ready": "等待开始", "desk.timeline": "Agent 对话时间线", "desk.latest": "回到最新 ↓",
+  "rail.queues": "工作队列", "rail.waiting": "等待你处理", "rail.running": "Agent 运行中", "rail.risk": "存在风险", "rail.campaigns": "进行中的项目",
 };
 
 export function translate(locale: Locale, key: TranslationKey, params: TranslationParams = {}) {
