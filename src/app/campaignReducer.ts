@@ -8,6 +8,7 @@ import { assessGap } from "../domain/gap";
 import type { CandidateDecision } from "../domain/model";
 import { planMaterialRun, registerArtifact, resolveWorkflowDecision, selectArtifact, startMaterialRun } from "../agent/workflow";
 import { parseAgentIntent } from "../agent/intent";
+import { buildCalibrationBatch, preferenceForReason } from "../agent/calibration";
 
 export type CampaignAction =
   | { type: "RESET" }
@@ -33,7 +34,10 @@ export type CampaignAction =
   | { type: "SEND_AGENT_MESSAGE"; text: string; context?: { candidateId?: string } }
   | { type: "FAIL_AGENT_STEP"; stepId: string; error: string }
   | { type: "RETRY_AGENT_STEP"; stepId: string }
-  | { type: "GENERATE_MIX_OPTIONS" };
+  | { type: "GENERATE_MIX_OPTIONS" }
+  | { type: "START_SOURCING" }
+  | { type: "REJECT_CALIBRATION_CANDIDATE"; candidateId: string; reason: string }
+  | { type: "APPROVE_CALIBRATION" };
 
 function activity(message: string) {
   return { id: `activity-${message.toLowerCase().replaceAll(/[^a-z0-9]+/g, "-")}`, at: "2026-09-21T10:00:00+08:00", kind: "Planning", message, status: "Success" as const };
@@ -140,6 +144,23 @@ export function campaignReducer(state: CampaignState, action: CampaignAction): C
         messages: [...agent.messages, { id: "message-run-search-packages", runId: agent.activeRunId, role: "Agent", type: "RunGroup", text: `${packages.length} search packages generated from the locked Matrix`, payloadRef: agent.activeRunId, createdAt: "2026-09-21T09:38:30+08:00" }],
       };
       return { ...state, agent, searchPackages: packages, activity: [...state.activity, activity(`${packages.length} search packages generated`)] };
+    }
+    case "START_SOURCING": {
+      const packages = state.searchPackages.length ? state.searchPackages : generateSearchPackages(state.matrixScenarios.find((scenario) => scenario.id === state.activeScenarioId)!);
+      const packageByCell = new Map(packages.map((item) => [item.matrixCellId, item]));
+      const calibrationIds = buildCalibrationBatch(state.candidates, packageByCell).map((candidate) => candidate.id);
+      let agent = registerArtifact(state.agent, { id: "artifact-calibration-batch-01", campaignId: state.id, kind: "CandidateBatch", version: 1, status: "Ready", sourceRunId: "run-brief-to-shortlist", sourceStepId: "step-source", parentArtifactIds: ["artifact-search-packages-v1"], domainRef: "calibration-batch-01", summary: "Calibration batch ready · 8 qualified examples + 2 explicit failure cases", createdAt: "2026-09-21T09:48:00+08:00" });
+      agent = { ...agent, calibrationCandidateIds: calibrationIds, selectedArtifactId: "artifact-calibration-batch-01", steps: agent.steps.map((step) => step.id === "step-source" ? { ...step, status: "Succeeded" as const, summary: "42 profiles evaluated; 10-case calibration batch prepared", completedAt: "2026-09-21T09:48:00+08:00" } : step.id === "step-calibrate" ? { ...step, status: "Waiting" as const, startedAt: "2026-09-21T09:48:00+08:00" } : step), runs: agent.runs.map((run) => run.id === agent.activeRunId ? { ...run, status: "WaitingForApproval" as const, currentStepId: "step-calibrate" } : run) };
+      return { ...state, searchPackages: packages, candidatesLoaded: true, agent };
+    }
+    case "REJECT_CALIBRATION_CANDIDATE": {
+      const preference = preferenceForReason(action.reason);
+      return { ...state, agent: { ...state.agent, calibrationFeedback: { ...state.agent.calibrationFeedback, [action.candidateId]: action.reason }, campaignPreferences: [...new Set([...state.agent.campaignPreferences, preference])], messages: [...state.agent.messages, { id: `message-calibration-${action.candidateId}`, runId: state.agent.activeRunId, role: "Agent", type: "Text", text: `Applied campaign preference: ${preference}. Hard constraints from Brief and Matrix are unchanged.`, payloadRef: action.candidateId, createdAt: "2026-09-21T09:50:00+08:00" }] } };
+    }
+    case "APPROVE_CALIBRATION": {
+      let agent = registerArtifact(state.agent, { id: "artifact-client-slate-v1", campaignId: state.id, kind: "CandidateBatch", version: 1, status: "Ready", sourceRunId: "run-brief-to-shortlist", sourceStepId: "step-calibrate", parentArtifactIds: ["artifact-calibration-batch-01"], domainRef: "client-slate-v1", summary: "Client slate ready · 30 primaries + 10 internal backups", createdAt: "2026-09-21T09:55:00+08:00" });
+      agent = { ...agent, selectedArtifactId: "artifact-client-slate-v1", steps: agent.steps.map((step) => step.id === "step-calibrate" ? { ...step, status: "Succeeded" as const, summary: "Calibration direction approved", completedAt: "2026-09-21T09:55:00+08:00" } : step.id === "step-publish" ? { ...step, status: "Pending" as const } : step), runs: agent.runs.map((run) => run.id === agent.activeRunId ? { ...run, status: "Running" as const, currentStepId: "step-publish" } : run), messages: [...agent.messages, { id: "message-next-review", runId: agent.activeRunId, role: "Agent", type: "NextAction", text: "Calibration approved. I can validate the 30 + 10 slate and prepare the client review.", payloadRef: "prepare-review", createdAt: "2026-09-21T09:55:30+08:00" }] };
+      return { ...state, agent };
     }
     case "LOAD_BATCHES": return {
       ...state,

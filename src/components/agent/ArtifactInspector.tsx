@@ -7,12 +7,13 @@ import { MatrixTable } from "../MatrixTable";
 import { MetricCard } from "../MetricCard";
 import { evaluateMatrix, summarizeMatrix } from "../../domain/matrix";
 import type { MatrixRow } from "../../domain/model";
+import { CandidateBatchDetail } from "./CandidateBatchDetail";
 
 const money = (value: number) => `$${Math.round(value / 1000)}K`;
 
 export function ArtifactInspector({ artifact }: { artifact: CampaignArtifact }) {
   const { dispatch } = useCampaign();
-  return <aside className="artifact-inspector"><header className="inspector-head"><div><span>{artifact.kind.toUpperCase()} · VERSION {artifact.version}</span><h2>{artifact.summary}</h2></div><button type="button" aria-label="Close artifact" onClick={() => dispatch({ type: "CLOSE_ARTIFACT" })}>×</button></header>{artifact.kind === "Brief" ? <BriefArtifactDetail /> : artifact.kind === "Mix" ? <MixArtifactDetail scenarioId={artifact.domainRef} /> : artifact.kind === "SearchPackageSet" ? <SearchPackageSetDetail /> : <div className="inspector-placeholder"><strong>{artifact.kind} detail</strong><p>This artifact will become interactive at its workflow stage.</p></div>}</aside>;
+  return <aside className="artifact-inspector"><header className="inspector-head"><div><span>{artifact.kind.toUpperCase()} · VERSION {artifact.version}</span><h2>{artifact.summary}</h2></div><button type="button" aria-label="Close artifact" onClick={() => dispatch({ type: "CLOSE_ARTIFACT" })}>×</button></header>{artifact.kind === "Brief" ? <BriefArtifactDetail /> : artifact.kind === "Mix" ? <MixArtifactDetail scenarioId={artifact.domainRef} /> : artifact.kind === "SearchPackageSet" ? <SearchPackageSetDetail /> : artifact.kind === "CandidateBatch" ? <CandidateBatchDetail artifact={artifact} /> : <div className="inspector-placeholder"><strong>{artifact.kind} detail</strong><p>This artifact will become interactive at its workflow stage.</p></div>}</aside>;
 }
 
 function BriefArtifactDetail() {
@@ -31,6 +32,6 @@ function MixArtifactDetail({ scenarioId }: { scenarioId: string }) {
 }
 
 function SearchPackageSetDetail() {
-  const { state } = useCampaign();
-  return <div className="inspector-body"><section className="inspector-section"><span className="micro-label">BOUNDED SEARCH</span><h3>{state.searchPackages.length} packages inherit Matrix constraints</h3><div className="compact-package-grid">{state.searchPackages.map((item) => <article key={item.id}><span>{item.market} · {item.platform}</span><strong>{item.ridingScenario} / {item.contentFormat}</strong><small>{item.candidateTargetCount} candidates · ceiling ${item.budgetCeilingPerCreator.toLocaleString()}</small></article>)}</div></section></div>;
+  const { state, dispatch } = useCampaign();
+  return <div className="inspector-body"><section className="inspector-section"><span className="micro-label">BOUNDED SEARCH</span><h3>{state.searchPackages.length} packages inherit Matrix constraints</h3><div className="compact-package-grid">{state.searchPackages.map((item) => <article key={item.id}><span>{item.market} · {item.platform}</span><strong>{item.ridingScenario} / {item.contentFormat}</strong><small>{item.candidateTargetCount} candidates · ceiling ${item.budgetCeilingPerCreator.toLocaleString()}</small></article>)}</div></section><div className="inspector-approval"><div><strong>Calibrate before scaling</strong><p>Run a 10-case sample: 8 qualified directions and 2 visible failure cases.</p></div><button type="button" onClick={() => dispatch({ type: "START_SOURCING" })}>Build calibration batch →</button></div></div>;
 }
